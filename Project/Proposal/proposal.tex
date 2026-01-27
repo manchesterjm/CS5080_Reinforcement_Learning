@@ -40,6 +40,20 @@ In prior work, I implemented a Deep Q-Network agent for Minesweeper that achieve
 
 \section{Background}
 
+\subsection{Minesweeper as a Markov Decision Process}
+
+We formalize Minesweeper as a Markov Decision Process (MDP) defined by the tuple $(\mathcal{S}, \mathcal{A}, P, R, \gamma)$:
+
+\textbf{State Space} $\mathcal{S}$: Each state $s \in \mathcal{S}$ is represented as an $H \times W \times C$ tensor, where $H$ and $W$ are the board dimensions and $C$ is the number of feature channels. Following \citet{phan2025training}, we encode each cell using 12 channels: one channel for each possible neighbor count (0--8), one for unrevealed cells, one for flagged cells, and one for revealed status. For a 16$\times$16 board, the state space contains over $12^{256}$ possible configurations, though the reachable subset is smaller due to game constraints.
+
+\textbf{Action Space} $\mathcal{A}$: The action space consists of $H \times W$ discrete actions, where each action corresponds to revealing a specific cell. Invalid actions (revealing already-revealed cells) are masked during action selection. For a 16$\times$16 board, $|\mathcal{A}| = 256$.
+
+\textbf{Transition Function} $P(s'|s,a)$: Transitions are stochastic from the agent's perspective due to partial observability---the agent cannot observe mine locations until revealed. Revealing a safe cell with zero adjacent mines triggers recursive reveals of neighboring cells.
+
+\textbf{Reward Function} $R(s,a,s')$: In the sparse reward setting, $R = +1$ for winning (all safe cells revealed), $R = -1$ for losing (mine revealed), and $R = 0$ otherwise.
+
+\textbf{Discount Factor} $\gamma$: Set to 0.99 to encourage efficient solutions while maintaining long-term planning.
+
 \subsection{Sparse Rewards in Reinforcement Learning}
 
 The sparse reward problem occurs when an agent receives non-zero rewards only rarely, making credit assignment difficult \citep{sutton2018reinforcement}. \citet{murphy2024reinforcement} provides a comprehensive overview of approaches to this challenge, including reward shaping, intrinsic motivation, and hierarchical methods. Recent advances include spatial-temporal return decomposition \citep{chen2024stas} and addressing ``lazy agent'' phenomena in multi-agent settings \citep{liu2023lazy}.
@@ -106,13 +120,27 @@ Performance will be measured by:
     \item \textbf{Learning curves:} Win rate versus training episodes
 \end{itemize}
 
-All methods will be compared against:
-\begin{itemize}
-    \item Pure DQN baseline (1\% win rate)
-    \item Hybrid DQN + AC-3 system (88\% win rate)
-    \item Random baseline
-    \item Results from \citet{phan2025training} on comparable board sizes
-\end{itemize}
+All methods will be compared against baselines from our prior work and the literature:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lcc}
+\toprule
+\textbf{Method} & \textbf{Board Size} & \textbf{Win Rate} \\
+\midrule
+Random baseline & 16$\times$16 & $<$1\% \\
+Pure DQN (ours) & 16$\times$16 & 1\% \\
+DQN + CNN \citep{phan2025training} & 6$\times$6 & 93\% \\
+DQN + CNN \citep{phan2025training} & 8$\times$8 & 72\% \\
+Hybrid DQN + AC-3 (ours) & 16$\times$16 & 88\% \\
+Human expert & 16$\times$16 & $\sim$85\% \\
+\midrule
+\textit{Target: Modern RL} & \textit{16$\times$16} & \textit{$>$50\%?} \\
+\bottomrule
+\end{tabular}
+\caption{Baseline performance comparison. The key question is whether modern RL methods can close the gap between pure DQN (1\%) and hybrid approaches (88\%) on expert-level boards.}
+\label{tab:baselines}
+\end{table}
 
 \section{Expected Contributions}
 
@@ -140,6 +168,20 @@ May 7 & Final presentation \\
 May 12 & Final paper due \\
 \bottomrule
 \end{tabular}
+
+\section{Expected Challenges}
+
+Several challenges may affect experimental outcomes:
+
+\textbf{Partial Observability:} Minesweeper violates the Markov property since optimal actions depend on hidden mine locations. Standard RL algorithms assume full observability; this mismatch may fundamentally limit achievable performance regardless of algorithm sophistication.
+
+\textbf{Sample Efficiency:} The large state space ($>$12$^{256}$ configurations) requires extensive exploration. Policy gradient methods like PPO and SAC typically require millions of environment interactions, which may be computationally prohibitive for thorough hyperparameter search.
+
+\textbf{Credit Assignment:} Even with reward shaping, determining which early-game actions contributed to eventual success or failure remains difficult. A single unlucky first move can doom an otherwise perfect strategy.
+
+\textbf{Curriculum Transfer:} Skills learned on small boards (5$\times$5) may not transfer effectively to larger boards (16$\times$16) due to qualitatively different strategic requirements. The curriculum may need careful tuning to ensure positive transfer.
+
+\textbf{Evaluation Variance:} Due to the stochastic nature of mine placement, win rates exhibit high variance. Statistical significance testing will require large sample sizes (10,000+ episodes per configuration).
 
 \section{Conclusion}
 

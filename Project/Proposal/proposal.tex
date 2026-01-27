@@ -1,0 +1,150 @@
+\documentclass[letterpaper]{article}
+\usepackage{aaai24}
+\usepackage{times}
+\usepackage{helvet}
+\usepackage{courier}
+\usepackage[hyphens]{url}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{natbib}
+\usepackage{amsmath}
+
+\title{Can Modern Deep RL Overcome Sparse Rewards? \\A Case Study in Minesweeper}
+\author{
+    Josh Manchester\\
+    Department of Computer Science\\
+    University of Colorado Colorado Springs\\
+    Colorado Springs, CO 80918\\
+    \texttt{jmanches@uccs.edu}
+}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Sparse reward environments remain a fundamental challenge in reinforcement learning, where agents receive feedback only upon task completion rather than incrementally. This proposal investigates whether modern deep RL algorithms can achieve competent performance in Minesweeper---a domain characterized by sparse rewards, large state spaces, and partial observability. Prior work combining Deep Q-Networks with constraint propagation logic achieved an 88\% win rate, while pure DQN achieved only 1\%. This dramatic gap raises a central question: can advanced RL techniques such as Proximal Policy Optimization (PPO), Soft Actor-Critic (SAC), reward shaping, and curriculum learning close this performance gap, or is domain knowledge fundamentally required? This project will systematically evaluate these approaches to provide empirical guidance on the limitations of pure RL in sparse reward domains.
+\end{abstract}
+
+\section{Introduction}
+
+Reinforcement learning has achieved remarkable success in domains ranging from Atari games to robotic control \citep{mnih2015human, haarnoja2018soft}. However, sparse reward environments---where agents receive meaningful feedback only at episode termination---remain a persistent challenge \citep{sutton2018reinforcement}. Recent work continues to address this fundamental limitation through techniques such as reward decomposition \citep{chen2024stas} and behavior-driven exploration \citep{zhang2025betadqn}.
+
+Minesweeper presents an ideal testbed for investigating sparse reward limitations. The game requires an agent to uncover all safe cells on a grid while avoiding hidden mines. Feedback is binary and delayed---the agent wins or loses only when the game ends. Additionally, the state space is enormous (over 5.3 million possible configurations even for a 6$\times$6 grid with four mines), and the environment is partially observable since mine locations are hidden \citep{phan2025training}.
+
+Recent work by \citet{phan2025training} achieved 93\% win rates on small 6$\times$6 grids using DQN and supervised learning, while \citet{jiang2025metarl} explored meta-RL approaches using Minesweeper as a test environment for language model agents. However, performance on larger boards remains challenging.
+
+In prior work, I implemented a Deep Q-Network agent for Minesweeper that achieved only a 1\% win rate on standard 16$\times$16 difficulty. However, when combining the neural network with AC-3 constraint propagation logic---using the network only for ``guessing'' when logic could not determine a safe move---the hybrid system achieved an 88\% win rate. This 87-point performance gap motivates the central research question:
+
+\textit{Can modern deep RL algorithms overcome the sparse reward problem in Minesweeper, or is domain-specific knowledge fundamentally required for competent play?}
+
+\section{Background}
+
+\subsection{Sparse Rewards in Reinforcement Learning}
+
+The sparse reward problem occurs when an agent receives non-zero rewards only rarely, making credit assignment difficult \citep{sutton2018reinforcement}. \citet{murphy2024reinforcement} provides a comprehensive overview of approaches to this challenge, including reward shaping, intrinsic motivation, and hierarchical methods. Recent advances include spatial-temporal return decomposition \citep{chen2024stas} and addressing ``lazy agent'' phenomena in multi-agent settings \citep{liu2023lazy}.
+
+\subsection{Deep Q-Network Improvements}
+
+Since the foundational DQN work \citep{mnih2015human}, numerous improvements have been proposed. Recent advances include $\beta$-DQN, which augments DQN with a behavior function for improved exploration \citep{zhang2025betadqn}, and Elastic Step DQN, which dynamically varies step sizes to alleviate overestimation bias \citep{han2024elastic}. These improvements may help address the challenges of sparse reward environments.
+
+\subsection{Policy Gradient Methods}
+
+Policy gradient methods offer an alternative to value-based approaches. Proximal Policy Optimization (PPO) uses a clipped objective function for stable policy updates \citep{schulman2017proximal}, while Soft Actor-Critic (SAC) combines off-policy learning with maximum entropy objectives for robust exploration \citep{haarnoja2018soft}. These methods may offer advantages in sparse reward settings due to their different exploration characteristics.
+
+\subsection{Curriculum Learning}
+
+Curriculum learning---training agents on progressively harder tasks---has shown promise for difficult RL problems \citep{parker2022syllabus}. By starting with simpler versions of a task and gradually increasing difficulty, agents may develop foundational skills that transfer to harder settings.
+
+\section{Proposed Methods}
+
+I propose to systematically evaluate the following approaches on Minesweeper:
+
+\subsection{Baseline: Deep Q-Network}
+
+The existing DQN implementation with Double DQN and Dueling architecture will serve as the baseline, currently achieving approximately 1\% win rate on 16$\times$16 boards with 40 mines.
+
+\subsection{DQN Improvements}
+
+Building on recent advances, I will implement:
+\begin{itemize}
+    \item $\beta$-DQN with behavior-driven exploration \citep{zhang2025betadqn}
+    \item Elastic Step DQN for reduced overestimation \citep{han2024elastic}
+\end{itemize}
+
+\subsection{Policy Gradient Methods}
+
+\textbf{PPO:} Proximal Policy Optimization may provide more stable learning in sparse reward settings due to its conservative policy updates \citep{schulman2017proximal}.
+
+\textbf{SAC:} Soft Actor-Critic's entropy maximization encourages exploration, which may help the agent discover winning strategies more efficiently \citep{haarnoja2018soft}.
+
+\subsection{Reward Shaping}
+
+Instead of receiving reward only at game end, I will experiment with intermediate rewards:
+\begin{itemize}
+    \item $+1$ for each safe cell revealed
+    \item $-0.5$ for incorrect flag placement
+    \item $+10$ for game completion (scaled by remaining cells)
+\end{itemize}
+
+\subsection{Curriculum Learning}
+
+Following \citet{parker2022syllabus}, I will implement a curriculum that gradually increases difficulty:
+\begin{enumerate}
+    \item 5$\times$5 grid with 3 mines (easy)
+    \item 8$\times$8 grid with 10 mines (medium)
+    \item 16$\times$16 grid with 40 mines (expert)
+\end{enumerate}
+The agent will advance to harder levels only after achieving a threshold win rate.
+
+\section{Evaluation}
+
+Performance will be measured by:
+\begin{itemize}
+    \item \textbf{Win rate:} Percentage of games won across 10,000 test episodes
+    \item \textbf{Sample efficiency:} Training steps required to reach threshold performance
+    \item \textbf{Learning curves:} Win rate versus training episodes
+\end{itemize}
+
+All methods will be compared against:
+\begin{itemize}
+    \item Pure DQN baseline (1\% win rate)
+    \item Hybrid DQN + AC-3 system (88\% win rate)
+    \item Random baseline
+    \item Results from \citet{phan2025training} on comparable board sizes
+\end{itemize}
+
+\section{Expected Contributions}
+
+This project will provide:
+\begin{enumerate}
+    \item Empirical comparison of modern RL algorithms (including recent advances like $\beta$-DQN) on a challenging sparse reward task
+    \item Analysis of when pure RL succeeds versus when domain knowledge is required
+    \item Practical guidance for practitioners facing sparse reward problems
+\end{enumerate}
+
+\section{Timeline}
+
+\begin{tabular}{ll}
+\toprule
+\textbf{Date} & \textbf{Milestone} \\
+\midrule
+Feb 17--19 & Proposal presentation \\
+Feb 19 & Proposal paper due \\
+Mar 1 & PPO, SAC, and $\beta$-DQN implementations \\
+Mar 15 & Reward shaping experiments complete \\
+Mar 31 & Curriculum learning experiments complete \\
+Apr 1 & Midterm presentation and paper \\
+Apr 15 & Full experimental results \\
+May 7 & Final presentation \\
+May 12 & Final paper due \\
+\bottomrule
+\end{tabular}
+
+\section{Conclusion}
+
+This proposal outlines a systematic investigation into whether modern deep RL algorithms can overcome the sparse reward challenge in Minesweeper. By comparing PPO, SAC, $\beta$-DQN, reward shaping, and curriculum learning against a DQN baseline, this work will provide empirical evidence on the fundamental limitations of pure RL and the necessity of domain knowledge in challenging environments.
+
+\bibliography{references}
+
+\end{document}

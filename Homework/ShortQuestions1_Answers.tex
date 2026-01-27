@@ -1,0 +1,43 @@
+\documentclass[letterpaper]{article}
+\usepackage{aaai24}
+\usepackage{times}
+\usepackage{helvet}
+\usepackage{courier}
+\usepackage[hyphens]{url}
+\usepackage{booktabs}
+\usepackage{natbib}
+
+\title{Short Questions 1}
+\author{
+    Josh Manchester\\
+    Department of Computer Science\\
+    University of Colorado Colorado Springs\\
+    Colorado Springs, CO 80918\\
+    \texttt{jmanches@uccs.edu}
+}
+
+\begin{document}
+
+\maketitle
+
+\section*{Question 1}
+\textit{What is reinforcement learning? Compare it briefly with supervised and unsupervised learning.}
+
+\vspace{0.5em}
+
+Sutton and Barto describe reinforcement learning (RL) as ``a third machine learning paradigm, alongside supervised learning and unsupervised learning'' \citep{sutton2018reinforcement}. In supervised learning, a human labels data ahead of time, telling the system the ``right answer'' for each example \citep{morales2020grokking}. Unsupervised learning finds hidden patterns in unlabeled data without any feedback. RL is different: an agent takes actions in an environment, receives rewards as feedback, and learns a policy to maximize cumulative reward over time. The key distinction is that RL feedback is delayed and there is no teacher providing correct answers---only better or worse outcomes. An RL agent must also balance \textit{exploration} of new actions with \textit{exploitation} of known good ones, a tradeoff that ``does not even arise in supervised and unsupervised learning'' \citep{sutton2018reinforcement}.
+
+\section*{Question 2}
+\textit{What are at least five publication venues where you are likely to find recently authored high-quality papers on reinforcement learning?}
+
+\vspace{0.5em}
+
+Finding quality research means knowing where to look. Based on Google Scholar's H5-index rankings for artificial intelligence, five top venues for reinforcement learning papers are: (1)~\textbf{ICML}, the International Conference on Machine Learning (H5:~272), which publishes foundational work on RL theory and algorithms; (2)~\textbf{AAAI}, the Association for the Advancement of Artificial Intelligence conference (H5:~232), covering RL applications in planning and robotics; (3)~\textbf{IEEE Transactions on Neural Networks and Learning Systems} (H5:~165), a high-impact journal for neural network-based RL research; (4)~\textbf{IJCAI}, the International Joint Conference on Artificial Intelligence (H5:~136), the oldest AI conference (established 1969) with broad RL coverage; and (5)~the \textbf{Journal of Machine Learning Research} (H5:~130), a respected open-access journal that has published seminal RL algorithms. These venues consistently feature cutting-edge reinforcement learning research and are recognized by the research community as top-tier outlets.
+
+\section*{AI Use Statement}
+
+Claude (Anthropic) was used to format my answers in AAAI LaTeX format and to retrieve H5-index rankings from Google Scholar Metrics.
+
+\bibliography{references}
+
+\end{document}

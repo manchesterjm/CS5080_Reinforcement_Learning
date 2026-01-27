@@ -1,0 +1,52 @@
+Short Questions 1 - Answers
+CS 5080 Reinforcement Learning
+Josh Manchester
+1/27/2026
+
+================================================================================
+Question 1 (5 points)
+What is reinforcement learning? Compare it briefly with supervised and
+unsupervised learning.
+================================================================================
+
+Reinforcement learning (RL) is a type of machine learning where an agent learns to make decisions by interacting with an environment. The agent takes actions, receives feedback in the form of rewards or penalties, and learns a policy that maximizes cumulative reward over time. Unlike other learning paradigms, RL involves sequential decision-making where current actions affect future states and rewards.
+
+Comparison with other learning paradigms:
+
+- Supervised Learning: Learns from labeled examples (input-output pairs) provided by a teacher. The goal is to generalize from these examples to predict outputs for new inputs. The feedback is immediate and explicit (the correct answer is known).
+
+- Unsupervised Learning: Learns patterns from unlabeled data without explicit feedback. The goal is to discover hidden structure, such as clusters or distributions, in the data.
+
+- Reinforcement Learning: Learns from interaction with an environment through trial and error. Feedback comes as scalar rewards that may be delayed, and there is no explicit "correct answer" - only better or worse outcomes. The agent must balance exploration (trying new actions) with exploitation (using known good actions).
+
+================================================================================
+Question 2 (5 points)
+What are at least five publication venues where you are likely to find recently
+authored high-quality papers on reinforcement learning?
+================================================================================
+
+Based on Google Scholar Metrics H5-index rankings for Artificial Intelligence publications, the top five venues for high-quality reinforcement learning research are:
+
+1. NeurIPS (Conference on Neural Information Processing Systems) - H5-index: 371
+   The top-ranked AI venue, NeurIPS regularly features foundational RL papers including breakthrough work on deep reinforcement learning, policy gradient methods, and model-based RL.
+
+2. ICLR (International Conference on Learning Representations) - H5-index: 362
+   Known for cutting-edge deep learning research, ICLR publishes significant RL work particularly in areas combining deep learning with sequential decision-making.
+
+3. ICML (International Conference on Machine Learning) - H5-index: 272
+   A premier ML conference with strong RL presence, featuring theoretical advances and practical algorithms in reinforcement learning.
+
+4. AAAI (AAAI Conference on Artificial Intelligence) - H5-index: 232
+   Broad AI coverage including substantial RL research, particularly work connecting RL to planning, robotics, and real-world applications.
+
+5. IEEE Transactions on Neural Networks and Learning Systems - H5-index: 165
+   A high-impact journal publishing rigorous RL research with emphasis on neural network-based approaches and learning systems.
+
+Source: Google Scholar Metrics - Artificial Intelligence category
+https://scholar.google.com/citations?view_op=top_venues&hl=en&vq=eng_artificialintelligence
+
+================================================================================
+AI Use Statement
+================================================================================
+
+Claude (Anthropic) was used to assist with formatting my ideas into the presentable form shown above, including retrieving current H5-index rankings from Google Scholar Metrics.

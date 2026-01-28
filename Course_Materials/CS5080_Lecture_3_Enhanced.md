@@ -17,9 +17,9 @@
 
 | From/To | Cold | Rain | Sun |
 |---------|------|------|-----|
-| Cold | 0.2 | 0.5 | 0.3 |
-| Rain | 0.5 | 0.3 | 0.2 |
-| Sun | 0.5 | 0.1 | 0.4 |
+| Cold    | 0.2  | 0.5  | 0.3 |
+| Rain    | 0.5  | 0.3  | 0.2 |
+| Sun     | 0.5  | 0.1  | 0.4 |
 
 *Note: Each row sums to 1* ✓ Correct
 
@@ -63,15 +63,15 @@ States: Bear Market, Bull Market, Stagnant Market
 📚 **[ADDITIONAL FROM TEXTBOOK - Complete MDP Definition]:**
 An MDP is formally defined by the tuple: **(S, A, T, R, γ, H, Sᵢ)**
 
-| Component | Symbol | Description |
-|-----------|--------|-------------|
-| State Space | S | Set of all possible states |
-| Action Space | A(s) | Set of actions available in state s |
-| **Transition Function** | **T(s,a,s')** | **Probability P(s' \| s, a)** |
-| **Reward Function** | **R(s,a,s')** | **Scalar reward for transition** |
-| **Discount Factor** | **γ** | **Value in [0,1], typically 0.99** |
-| Horizon | H | Finite or infinite time steps |
-| Initial State Distribution | Sᵢ | Where episodes start |
+| Component                   | Symbol         | Description                          |
+|-----------------------------|----------------|--------------------------------------|
+| State Space                 | S              | Set of all possible states           |
+| Action Space                | A(s)           | Set of actions available in state s  |
+| **Transition Function**     | **T(s,a,s')**  | **Probability P(s' \| s, a)**        |
+| **Reward Function**         | **R(s,a,s')**  | **Scalar reward for transition**     |
+| **Discount Factor**         | **γ**          | **Value in [0,1], typically 0.99**   |
+| Horizon                     | H              | Finite or infinite time steps        |
+| Initial State Distribution  | Sᵢ             | Where episodes start                 |
 
 *Your notes covered S and A. The transition function T, reward function R, and discount factor γ are critical components covered later in the chapter.*
 
@@ -116,10 +116,10 @@ The key difference: In a Markov Chain, transitions happen automatically accordin
   - Different reward structures lead to different behaviors ✓ Correct
 
 📚 **[ADDITIONAL FROM TEXTBOOK - Dense vs Sparse Rewards]:**
-| Reward Type | Description | Pros | Cons |
-|-------------|-------------|------|------|
-| **Dense** | Frequent non-zero rewards | Faster learning, more guidance | More bias, less emergent behavior |
-| **Sparse** | Rare rewards (e.g., only at goal) | Novel solutions possible | Much slower learning |
+| Reward Type | Description                       | Pros                           | Cons                            |
+|-------------|-----------------------------------|--------------------------------|---------------------------------|
+| **Dense**   | Frequent non-zero rewards         | Faster learning, more guidance | More bias, less emergent behavior |
+| **Sparse**  | Rare rewards (e.g., only at goal) | Novel solutions possible       | Much slower learning            |
 
 📚 **[ADDITIONAL FROM TEXTBOOK - Reward Function Forms]:**
 - **R(s, a, s')** - Most explicit (depends on full transition)
@@ -144,10 +144,10 @@ Even negative values are called "rewards" in RL terminology. Think of them as co
 - Could go on forever if agent doesn't reach goal ✓ Correct
 
 📚 **[ADDITIONAL FROM TEXTBOOK - Task Types]:**
-| Task Type | Description | Example |
-|-----------|-------------|---------|
-| **Episodic** | Has terminal states, finite | Games, mazes |
-| **Continuing** | No natural ending, infinite | Robot locomotion |
+| Task Type              | Description                        | Example            |
+|------------------------|------------------------------------|--------------------|
+| **Episodic**           | Has terminal states, finite        | Games, mazes       |
+| **Continuing**         | No natural ending, infinite        | Robot locomotion   |
 | **Indefinite Horizon** | Plans for infinite but may terminate | Most common in RL |
 
 📚 **[ADDITIONAL FROM TEXTBOOK - Terminal State Convention]:**
@@ -186,10 +186,10 @@ A **policy** describes what action should be performed by the agent in which sta
 - At the end state, it needs to compute what it did and learn ✓ Correct
 
 📚 **[ADDITIONAL FROM TEXTBOOK - Policy Types]:**
-| Policy Type | Notation | Description |
-|-------------|----------|-------------|
-| **Deterministic** | π(s) = a | Always same action in state s |
-| **Stochastic** | π(a\|s) = P(Aₜ=a \| Sₜ=s) | Probability distribution over actions |
+| Policy Type       | Notation                    | Description                            |
+|-------------------|-----------------------------|----------------------------------------|
+| **Deterministic** | π(s) = a                    | Always same action in state s          |
+| **Stochastic**    | π(a\|s) = P(Aₜ=a \| Sₜ=s)   | Probability distribution over actions  |
 
 📚 **[ADDITIONAL FROM TEXTBOOK - Optimal Policy]:**
 The **optimal policy π*** is the policy that maximizes expected return from every state. There may be multiple optimal policies, but they all achieve the same optimal value function.
@@ -297,10 +297,10 @@ The optimal policy simply picks the action with highest Q-value in each state.
 ⚠️ **[CLARIFICATION NEEDED]:**
 The terminology in your notes is slightly imprecise. More accurately:
 
-| Component | What It Learns | Role |
-|-----------|----------------|------|
-| **Critic** | V(s) or Q(s,a) | Evaluates how good states/actions are |
-| **Actor** | π(a\|s) - the policy | Decides which actions to take |
+| Component  | What It Learns       | Role                                  |
+|------------|----------------------|---------------------------------------|
+| **Critic** | V(s) or Q(s,a)       | Evaluates how good states/actions are |
+| **Actor**  | π(a\|s) - the policy | Decides which actions to take         |
 
 The **Actor** learns the *policy* (mapping states → actions), not Q values directly. The **Critic** provides feedback to help the Actor improve. They work together:
 1. Actor proposes an action
@@ -349,17 +349,17 @@ This is why Actor-Critic methods (like A3C, SAC, PPO) are popular in modern deep
 
 ## Summary: Your Notes vs. Textbook
 
-| Topic | Your Notes | Textbook Alignment |
-|-------|------------|-------------------|
-| Markov Property | ✓ Correct | Perfect match |
-| MDP Definition | Partial (S, A only) | Add T, R, γ |
-| Rewards | ✓ Correct | Add dense/sparse distinction |
-| Episodes | ✓ Correct | Add task types |
-| Policy | ✓ Correct | Add deterministic/stochastic |
-| V(s) and Q(s,a) | ✓ Correct | Add formal definitions |
-| Policy from V(s) | ✓ Correct | Add Bellman connection |
-| Policy from Q(s,a) | ✓ Correct | Foundation of Q-learning |
-| Actor-Critic | ⚠️ Slight imprecision | Critic=value, Actor=policy |
+| Topic              | Your Notes            | Textbook Alignment            |
+|--------------------|-----------------------|-------------------------------|
+| Markov Property    | ✓ Correct             | Perfect match                 |
+| MDP Definition     | Partial (S, A only)   | Add T, R, γ                   |
+| Rewards            | ✓ Correct             | Add dense/sparse distinction  |
+| Episodes           | ✓ Correct             | Add task types                |
+| Policy             | ✓ Correct             | Add deterministic/stochastic  |
+| V(s) and Q(s,a)    | ✓ Correct             | Add formal definitions        |
+| Policy from V(s)   | ✓ Correct             | Add Bellman connection        |
+| Policy from Q(s,a) | ✓ Correct             | Foundation of Q-learning      |
+| Actor-Critic       | ⚠️ Slight imprecision | Critic=value, Actor=policy    |
 
 **Overall Assessment:** Your lecture notes are technically sound and capture the key concepts correctly. The main areas to supplement from the textbook are the complete MDP definition (adding T, R, γ) and the Actor-Critic clarification.
 

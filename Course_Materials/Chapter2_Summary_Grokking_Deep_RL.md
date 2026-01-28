@@ -6,16 +6,16 @@
 
 ## Key Concepts at a Glance
 
-| Term | Definition |
-|------|------------|
-| **MDP** | Mathematical framework for sequential decision-making under uncertainty |
-| **State (S)** | Unique configuration of the environment |
-| **Action (A)** | Mechanism to influence the environment |
-| **Transition Function T(s,a,s')** | Probability of reaching s' from s via action a |
-| **Reward Function R(s,a,s')** | Scalar signal indicating goodness of a transition |
-| **Policy** | Mapping from states to actions |
-| **Episode** | Sequence from initial to terminal state |
-| **Discount Factor (γ)** | Reduces value of future rewards (typically 0.99) |
+| Term                             | Definition                                                    |
+|----------------------------------|---------------------------------------------------------------|
+| **MDP**                          | Mathematical framework for sequential decision-making under uncertainty |
+| **State (S)**                    | Unique configuration of the environment                       |
+| **Action (A)**                   | Mechanism to influence the environment                        |
+| **Transition Function T(s,a,s')**| Probability of reaching s' from s via action a                |
+| **Reward Function R(s,a,s')**    | Scalar signal indicating goodness of a transition             |
+| **Policy**                       | Mapping from states to actions                                |
+| **Episode**                      | Sequence from initial to terminal state                       |
+| **Discount Factor (γ)**          | Reduces value of future rewards (typically 0.99)              |
 
 ---
 
@@ -39,15 +39,15 @@
 ### Formal Definition
 An MDP is defined by the tuple: **(S, A, T, R, γ, H, S_i)**
 
-| Component | Symbol | Description |
-|-----------|--------|-------------|
-| State Space | S | Set of all possible states |
-| Action Space | A(s) | Set of actions available in state s |
-| Transition Function | T(s,a,s') | P(s' \| s, a) - probability of transition |
-| Reward Function | R(s,a,s') | Scalar reward for transition |
-| Discount Factor | γ | Value in [0,1] for discounting future rewards |
-| Horizon | H | Finite or infinite time steps |
-| Initial States | S_i | Distribution over starting states |
+| Component           | Symbol      | Description                                 |
+|---------------------|-------------|---------------------------------------------|
+| State Space         | S           | Set of all possible states                  |
+| Action Space        | A(s)        | Set of actions available in state s         |
+| Transition Function | T(s,a,s')   | P(s' \| s, a) - probability of transition   |
+| Reward Function     | R(s,a,s')   | Scalar reward for transition                |
+| Discount Factor     | γ           | Value in [0,1] for discounting future rewards |
+| Horizon             | H           | Finite or infinite time steps               |
+| Initial States      | S_i         | Distribution over starting states           |
 
 ### The Markov Property
 > **"The future depends only on the present, not the past."**
@@ -133,18 +133,20 @@ An MDP is defined by the tuple: **(S, A, T, R, γ, H, S_i)**
 ## 7. Horizon: Time in MDPs
 
 **Task Types:**
-| Type | Description |
-|------|-------------|
-| **Episodic** | Finite time steps, has terminal states |
+
+| Type           | Description                            |
+|----------------|----------------------------------------|
+| **Episodic**   | Finite time steps, has terminal states |
 | **Continuing** | Infinite time steps, no natural ending |
 
 **Planning Horizons:**
-| Horizon | Description |
-|---------|-------------|
-| **Greedy (H=1)** | Plan only one step ahead |
-| **Finite** | Known number of steps |
-| **Infinite** | Plan for unlimited steps |
-| **Indefinite** | Plan infinite, but may terminate |
+
+| Horizon          | Description                    |
+|------------------|--------------------------------|
+| **Greedy (H=1)** | Plan only one step ahead       |
+| **Finite**       | Known number of steps          |
+| **Infinite**     | Plan for unlimited steps       |
+| **Indefinite**   | Plan infinite, but may terminate |
 
 **Episode:** Sequence of time steps from start to terminal state
 

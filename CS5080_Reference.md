@@ -257,6 +257,16 @@ CS5080_Reinforcement_Learning/
 - `Grokking_Deep_RL_Chapter_01.docx` - Introduction to DRL
 - `Grokking_Deep_RL_Chapter_02.docx` - Mathematical foundations (MDPs)
 - `Grokking_Deep_RL_Chapter_03.docx` - Balancing immediate and long-term goals
+- `Grokking_Deep_RL_Chapter_04.docx` - Balancing evaluation and control
+- `Grokking_Deep_RL_Chapter_05.docx` - Evaluating agent behaviors
+- `Grokking_Deep_RL_Chapter_06.docx` - Improving agent behaviors
+- `Grokking_Deep_RL_Chapter_07.docx` - Achieving goals more effectively
+- `Grokking_Deep_RL_Chapter_08.docx` - Introduction to value-based deep RL
+- `Grokking_Deep_RL_Chapter_09.docx` - More stable value-based methods
+- `Grokking_Deep_RL_Chapter_10.docx` - Policy gradient and actor-critic methods
+- `Grokking_Deep_RL_Chapter_11.docx` - Advanced actor-critic methods
+- `Grokking_Deep_RL_Chapter_12.docx` - Toward curiosity-driven agents
+- `Grokking_Deep_RL_Chapter_13.docx` - Achieving human-level performance
 
 ### LaTeX/
 - `aaai24.sty` - AAAI 2024 LaTeX style file

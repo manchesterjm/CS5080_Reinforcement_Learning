@@ -192,43 +192,70 @@ From CS 2300 and general coursework:
 
 ## Assignments
 
-| Assignment | Due | Status | File |
-|------------|-----|--------|------|
-| Short Questions 1 | TBD | Submitted 1/27 | `Homework/ShortQuestions1_Answers.pdf` |
+| Assignment        | Due      | Status    | File                                        |
+| ----------------- | -------- | --------- | ------------------------------------------- |
+| Short Questions 1 | 1/27     | Submitted | `Homework/Submissions/ShortQuestions1_Answers.pdf` |
+| Short Questions 2 | 2/3      | Submitted | `Homework/Submissions/ShortQuestions2_Answers.pdf` |
+| HW1 Monte Carlo   | 2/13     | Complete  | `Homework/HW1_MonteCarlo/` + `Homework/Source/HW1_MonteCarlo_Paper.pdf` |
+
+### HW1: Monte Carlo Maze Solver
+
+**Implementation:** Monte Carlo ES (Exploring Starts) from scratch, following Sutton & Barto p.99.
+
+| File                 | Purpose                                          |
+| -------------------- | ------------------------------------------------ |
+| `maze.py`            | 5×5 grid environment (start (1,1), goal (5,5))   |
+| `monte_carlo.py`     | First-visit MC-ES with Q-table and greedy policy |
+| `maze_generator.py`  | Random maze generator with BFS path verification |
+| `visualize.py`       | Matplotlib policy/value visualization            |
+| `main.py`            | Experiment runner for all HW questions           |
+| `generate_figures.py`| Publication-quality figure generation            |
+
+**Results:**
+- 100% success rate across all configurations
+- 8 steps optimal path on HW1 maze
+- Converges within ~1,500 episodes
+- Scales to 7×7 (12 steps) and 10×10 (18 steps) mazes
+
+**Paper:** `Homework/Source/HW1_MonteCarlo_Paper.pdf` (4 pages, AAAI format)
 
 ---
 
 ## Semester Project
 
-**Title:** Can Modern Deep RL Overcome Sparse Rewards? A Case Study in Minesweeper
+**Title:** How Accurate Are Learned World Models? An Empirical Analysis of DreamerV3's Imagination
 
-**Research Question:** Can modern RL algorithms close the 87-point performance gap between pure DQN (1% win rate) and hybrid DQN+AC-3 logic (88% win rate)?
+**Research Question:** Does imagination accuracy correlate with task performance in model-based RL?
 
-**Methods to Evaluate:**
-- DQN baseline (existing implementation)
-- β-DQN with behavior-driven exploration
-- Elastic Step DQN for reduced overestimation
-- PPO (Proximal Policy Optimization)
-- SAC (Soft Actor-Critic)
-- Reward shaping (intermediate rewards)
-- Curriculum learning (5×5 → 8×8 → 16×16)
+**Approach:**
+1. Train DreamerV3 on 3 Atari games (Breakout, Pong, Seaquest)
+2. Extract imagined trajectories at multiple training checkpoints
+3. Measure prediction accuracy (SSIM, MSE, perceptual metrics)
+4. Correlate imagination quality with game performance
+5. Analyze which game elements are well-modeled vs poorly-modeled
+
+**Key Insight:** DreamerV3 trains policies entirely in "imagination" - if the world model is inaccurate, how does the agent still succeed?
 
 **Deliverables:**
 
-| Deliverable | Due | Weight | Status |
-|-------------|-----|--------|--------|
-| Proposal presentation | Feb 17-19 | 2.5% | Draft ready |
-| Proposal paper | Feb 19 | 5% | Draft ready |
-| Midterm presentation | Mar 31-Apr 1 | 2.5% | |
-| Midterm paper | Apr 1 | 7.5% | |
-| Midterm demo | Week of Apr 1 | 2.5% | |
-| Final presentation | May 7/12 | 5% | |
-| Final paper | May 12 | 17.5% | |
-| Final demo | Week of May 12 | 7.5% | |
+| Deliverable           | Due          | Weight | Status     |
+| --------------------- | ------------ | ------ | ---------- |
+| Proposal presentation | Feb 17-19    | 2.5%   | Ready      |
+| Proposal paper        | Feb 19       | 5%     | Complete   |
+| Midterm presentation  | Mar 31-Apr 1 | 2.5%   |            |
+| Midterm paper         | Apr 1        | 7.5%   |            |
+| Midterm demo          | Week of Apr 1| 2.5%   |            |
+| Final presentation    | May 7/12     | 5%     |            |
+| Final paper           | May 12       | 17.5%  |            |
+| Final demo            | Week of May 12| 7.5%  |            |
 
-**References:** 12 papers (4 foundational + 8 recent 2023-2026) in `Project/Proposal/references.bib`
+**References:** 14 papers in `Project/Proposal/references.bib` including:
+- Hafner et al. (2023) - DreamerV3
+- Hafner et al. (2020, 2021) - DreamerV1, DreamerV2
+- Ha & Schmidhuber (2018) - World Models
+- Wang et al. (2004) - SSIM metric
 
-**Existing Codebase:** `D:\Simulations\AI_ML\minesweeper_ml_project\` (GitHub: manchesterjm/minesweeper_ml_project)
+**Proposal:** `Project/Proposal/proposal.pdf` (3 pages, AAAI format)
 
 ---
 
@@ -236,18 +263,24 @@ From CS 2300 and general coursework:
 
 ```
 CS5080_Reinforcement_Learning/
-├── Course_Materials/     # Syllabus, lectures, handouts from professor
-├── Homework/             # Assignment submissions (tex, pdf, bib)
-├── LaTeX/                # AAAI style files (aaai24.sty, aaai24.bst)
-├── Project/              # Semester project
-│   ├── Proposal/         # Proposal paper (due Feb 19)
-│   │   ├── Papers/       # Downloaded reference PDFs
-│   │   ├── proposal.tex
-│   │   └── references.bib
-│   ├── Midterm/          # Midterm paper (due Apr 1)
-│   └── Final/            # Final paper (due May 12)
-├── References/           # Textbooks and supplemental PDFs
-└── CS5080_Reference.md   # This file
+├── Course_Materials/          # Syllabus, lectures, handouts
+│   ├── CS5080_Lecture_*.md    # Transcribed lecture notes
+│   └── *.pdf                  # Original lecture PDFs
+├── Homework/
+│   ├── Assignments/           # Assignment PDFs (questions)
+│   ├── Submissions/           # Submitted answer PDFs
+│   ├── Source/                # LaTeX source files
+│   │   ├── figures/           # Generated figures for papers
+│   │   ├── aaai24.sty/bst     # AAAI style files
+│   │   └── *.tex              # Paper source files
+│   └── HW1_MonteCarlo/        # HW1 Python implementation
+├── LaTeX/                     # Shared AAAI style files
+├── Project/
+│   ├── Proposal/              # DreamerV3 proposal (due Feb 19)
+│   ├── Midterm/               # Midterm paper (due Apr 1)
+│   └── Final/                 # Final paper (due May 12)
+├── References/                # Textbooks and supplemental PDFs
+└── CS5080_Reference.md        # This file
 ```
 
 ### References/ (Textbooks)
@@ -324,4 +357,4 @@ From syllabus + Google Scholar H5-index (2025):
 
 ---
 *Created: 2026-01-24*
-*Updated: 2026-01-27*
+*Updated: 2026-02-05*

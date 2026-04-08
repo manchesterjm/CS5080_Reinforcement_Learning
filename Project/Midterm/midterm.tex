@@ -1,0 +1,247 @@
+\documentclass[letterpaper]{article}
+\usepackage{aaai24}
+\usepackage{times}
+\usepackage{helvet}
+\usepackage{courier}
+\usepackage[hyphens]{url}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{natbib}
+\usepackage{amsmath}
+\usepackage{multirow}
+
+\title{How Accurate Are Learned World Models? \\Midterm Progress on Measuring DreamerV3's Imagination Fidelity}
+\author{
+    Josh Manchester\\
+    Department of Computer Science\\
+    University of Colorado Colorado Springs\\
+    Colorado Springs, CO 80918\\
+    \texttt{jmanches@uccs.edu}
+}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+DreamerV3 trains its policy entirely inside a learned world model---it learns by dreaming rather than by doing. This work investigates how accurate those imagined trajectories are and whether accuracy matters for game performance. Five training configurations of DreamerV3 have been trained on Snake, a game with deterministic dynamics that make imagination errors precisely measurable. Imagined trajectories are extracted from 21 checkpoints per run and compared against real game states using both pixel-level metrics (MSE, SSIM) and semantic metrics (head position, body segments, food location). Preliminary results across three hypotheses are encouraging: imagination accuracy improves over training (H1), correlates with game performance (H2), and---under the right training conditions---semantic metrics significantly outpredict pixel metrics (H3, Fisher's $z$-test $p = 0.008$). This paper reports interim findings from five completed configurations, with additional runs in progress for the final analysis.
+\end{abstract}
+
+\section{Introduction}
+
+Model-based reinforcement learning agents learn a model of the environment and use it for planning, rather than learning a policy directly from interactions \citep{sutton2018rl}. The Dreamer family takes this to its logical extreme: the agent trains its policy entirely inside the learned world model, never touching the real environment during policy optimization \citep{hafner2020dreamerv1, hafner2021dreamerv2, hafner2025dreamerv3}. DreamerV3 represents the current state of the art, mastering Atari, continuous control, and Minecraft with the same fixed hyperparameters \citep{hafner2025dreamerv3}.
+
+Most research on DreamerV3 focuses on end-task performance. What gets less attention is the world model itself. The agent trains inside an imagined version of the environment. If the world model predicts the wrong outcome for an action, the agent optimizes for a scenario that does not exist. Understanding when and how imagination diverges from reality could reveal why model-based RL works as well as it does---and where it might break down.
+
+The central question is: \textbf{Does DreamerV3 need accurate imagination to learn effective policies, or can it succeed even when its world model is wrong?} This decomposes into three testable hypotheses:
+\begin{itemize}
+    \item[\textbf{H1:}] Imagination accuracy improves as training progresses.
+    \item[\textbf{H2:}] Better imagination leads to better play---accuracy correlates with performance.
+    \item[\textbf{H3:}] Semantic accuracy matters more than pixel accuracy---knowing where game elements are is more important than producing sharp images.
+\end{itemize}
+
+This paper reports interim results from five completed training configurations. The analysis pipeline is fully operational, and preliminary findings support all three hypotheses to varying degrees---with one configuration producing a statistically significant H3 result. Additional training runs are in progress and will be included in the final paper.
+
+
+\section{Background}
+
+\subsection{World Models and the Dreamer Family}
+
+The idea of learning a model of the environment for planning has a long history in RL \citep{sutton2018rl}. \citet{ha2018world} demonstrated that an agent could learn a compressed environment representation and train a policy entirely within that learned model. \citet{hafner2019planet} formalized this with the Recurrent State-Space Model (RSSM), which maintains both a deterministic recurrent state and a stochastic latent state. The deterministic path captures persistent temporal information; the stochastic path models uncertainty.
+
+DreamerV1 introduced actor-critic training entirely within imagined RSSM trajectories \citep{hafner2020dreamerv1}. DreamerV2 improved this with discrete latent representations, achieving human-level Atari performance \citep{hafner2021dreamerv2}. DreamerV3 added symlog predictions for reward-scale robustness and a fixed hyperparameter set that generalizes across diverse domains \citep{hafner2025dreamerv3}. It was the first single algorithm to collect diamonds in Minecraft from scratch.
+
+\subsection{Related Work}
+
+Several works have extended the Dreamer architecture. \citet{deng2022dreamerpro} removed the reconstruction objective, training with prototypical representations. \citet{zhang2023oderssm} extended the RSSM for irregularly sampled data. \citet{sekar2020plan2explore} used the world model for self-supervised exploration. \citet{lin2024dynalang} incorporated language for instruction-following. \citet{walker2023modelbased} investigated model-based learning's role in exploration, and \citet{sullivan2023rewardscale} analyzed whether DreamerV3's design choices transfer to model-free methods.
+
+However, these works focus on improving the world model or policy---not on measuring imagination accuracy directly. A systematic, frame-by-frame measurement of imagination fidelity remains largely unexplored. This gap matters because understanding what the world model gets right and wrong could inform architectural improvements and explain why model-based RL generalizes across domains.
+
+
+\section{Methods}
+
+\subsection{Environment}
+
+Snake is formalized as an MDP $(\mathcal{S}, \mathcal{A}, P, R, \gamma)$ on a $10 \times 10$ grid rendered as $64 \times 64$ RGB images (or smaller for resolution experiments). The action space contains four discrete directions. Transitions are deterministic: the snake moves one cell per step, grows on eating food, and dies on collision. The reward is $+1$ for food, $-1$ for collision, and $-0.002$ per step to discourage idle behavior. The discount $\gamma = 0.999$ encourages long-horizon play. Distinct colors---bright green (head), dark green (body), red (food), black (background)---enable automated state extraction from both real and imagined frames.
+
+\subsection{Training Configurations}
+
+To test whether the hypotheses generalize, five configurations were trained, each varying one parameter from the baseline (Table~\ref{tab:configs}). Two additional configurations---a $3\times$ learning rate model and a doubled train ratio model---are discussed in Section~\ref{sec:ongoing}.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{llcccc}
+\toprule
+\textbf{Config} & \textbf{Obs} & \textbf{Steps} & \textbf{TR} & \textbf{LR} & \textbf{Key Change} \\
+\midrule
+Baseline    & 64    & 1.1M & 256 & 1e-4 & --- \\
+Extended    & 64    & 2M   & 256 & 1e-4 & Fine-tuned \\
+Slow LR     & 64    & 2M   & 256 & 3e-5 & $\frac{1}{3}\times$ LR \\
+Res-32      & 32    & 557K$^\dagger$ & 512 & 1e-4 & Lower res \\
+Res-16      & 16    & 514K$^\dagger$ & 512 & 1e-4 & Lowest res \\
+\bottomrule
+\end{tabular}
+\caption{Training configurations. Obs = observation width (pixels). TR = train ratio. LR = model learning rate; actor/critic LR scales proportionally. The Extended model was fine-tuned from the Baseline checkpoint with increased episode length (2000 vs.\ 500 max steps). $^\dagger$Resolution configs were mistakenly set to a 500K step target instead of the standard 2M; results are presented as-is with this limitation noted.}
+\label{tab:configs}
+\end{table}
+
+\subsection{Imagination Extraction}
+
+Imagined trajectories are extracted from each checkpoint: (1)~load world model weights, (2)~select 20 evaluation episodes, (3)~feed the first 5 frames through the encoder and RSSM posterior to establish the latent state, (4)~roll the RSSM forward using the real action sequence without further observations for up to 55 steps, and (5)~decode each imagined latent state to produce RGB frames. This mirrors DreamerV3's built-in \texttt{video\_pred} pipeline.
+
+\subsection{Metrics}
+
+\textbf{Pixel-level metrics} capture visual fidelity: Mean Squared Error (MSE) and Structural Similarity Index (SSIM) \citep{wang2004ssim}. \textbf{Semantic metrics} capture game-state accuracy by extracting head, body, and food positions from frames via color matching: head error (Euclidean distance in grid cells), body accuracy (fraction of correctly placed segments), and food correct (binary). The state extractor samples center pixels of each grid cell and matches to the nearest reference color with a distance threshold of 100 to handle decoder blur.
+
+\subsection{Analysis}
+
+Spearman rank correlations test H1 (metric vs.\ training step), H2 (metric vs.\ evaluation return), and H3 (comparison of pixel vs.\ semantic predictive strength via Fisher's $z$-test). Statistical significance is assessed at $\alpha = 0.05$.
+
+
+\section{Preliminary Results}
+
+\subsection{Training Progress}
+
+Table~\ref{tab:performance} summarizes game performance. The Extended model (fine-tuned, longer episodes) achieves the highest performance, while lower resolutions produce substantially weaker agents despite the same underlying game logic.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lccc}
+\toprule
+\textbf{Config} & \textbf{Mean} & \textbf{Peak} & \textbf{Final 5} \\
+\midrule
+Extended    & 31.17 & 54.26 & 36.50 \\
+Slow LR     & 16.57 & 24.60 & 19.16 \\
+Baseline    &  9.82 & 25.71 & 22.28 \\
+Res-32      &  1.06 & 13.60 &  9.83 \\
+Res-16      &  0.78 &  9.13 &  7.44 \\
+\bottomrule
+\end{tabular}
+\caption{Game performance (evaluation return). Mean and peak over all evaluations; Final 5 is the average of the last five evaluation rounds.}
+\label{tab:performance}
+\end{table}
+
+\subsection{H1: Imagination Improves Over Training}
+
+Table~\ref{tab:h1} summarizes H1 across configurations. The strongest improvement signals appear in models still actively learning, while the Extended model---which inherited a competent world model from fine-tuning---shows no significant trends.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lcc}
+\toprule
+\textbf{Config} & \textbf{Improving} & \textbf{Significant} \\
+\midrule
+Res-16      & 5/5 & 5/5 \\
+Res-32      & 5/5 & 5/5 \\
+Baseline    & 5/5 & 4/5 \\
+Slow LR     & 5/5 & 2/5 \\
+Extended    & 3/5 & 0/5 \\
+\bottomrule
+\end{tabular}
+\caption{H1: Metrics showing improvement over training steps (out of 5) and number reaching significance ($p < 0.05$).}
+\label{tab:h1}
+\end{table}
+
+In the Baseline model, head error drops from 0.268 to 0.023 grid cells ($\rho = -0.850$, $p < 0.001$). The Extended model's flat trends reveal that the world model plateaus early while the policy continues improving---the bottleneck shifts from world modeling to policy optimization. This is a promising preliminary pattern: imagination quality appears most diagnostic during active learning phases.
+
+\subsection{H2: Imagination Correlates with Performance}
+
+Table~\ref{tab:h2} shows Spearman $|\rho|$ between each imagination metric and evaluation return across configurations.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Metric} & \textbf{Base} & \textbf{Ext} & \textbf{Slow} & \textbf{R32} & \textbf{R16} \\
+\midrule
+MSE              & .570$^{*}$  & .099 & .023 & .603$^{*}$  & .564$^{*}$  \\
+SSIM             & .630$^{**}$ & .120 & .066 & .660$^{**}$ & .641$^{*}$  \\
+Head err         & .843$^{***}$& .163 & .514$^{*}$  & .513$^{*}$  & .678$^{**}$ \\
+Body acc         & .352        & .511$^{*}$  & .740$^{***}$& .292 & .532$^{*}$  \\
+Food corr        & .597$^{**}$ & .090 & .310 & .654$^{**}$ & .636$^{**}$ \\
+\bottomrule
+\end{tabular}
+\caption{H2: Spearman $|\rho|$ between imagination metrics and evaluation return. $^{*}p < 0.05$, $^{**}p < 0.01$, $^{***}p < 0.001$.}
+\label{tab:h2}
+\end{table}
+
+The Baseline shows the strongest overall signal, with head error as the dominant predictor ($|\rho| = 0.843$, $p < 0.001$). The most striking preliminary finding is the Slow LR column: pixel metrics show near-zero correlation ($|\rho| < 0.07$), while semantic metrics---especially body accuracy ($|\rho| = 0.740$, $p < 0.001$)---are strong predictors. Under the slow learning rate, image quality has essentially no relationship with game performance.
+
+\subsection{H3: Semantic vs. Pixel Metrics}
+
+Table~\ref{tab:h3} compares the average predictive strength of pixel and semantic metrics.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Config} & \textbf{Pixel} $\overline{|\rho|}$ & \textbf{Semantic} $\overline{|\rho|}$ & \textbf{Fisher $z$} & \textbf{$p$} \\
+\midrule
+Slow LR     & 0.045 & 0.522 & 2.65 & \textbf{0.008}$^{**}$ \\
+Extended    & 0.110 & 0.255 & ---  & n.s. \\
+Baseline    & 0.600 & 0.597 & 1.42 & 0.154 \\
+Res-32      & 0.631 & 0.486 & ---  & n.s. \\
+Res-16      & 0.603 & 0.615 & ---  & n.s. \\
+\bottomrule
+\end{tabular}
+\caption{H3: Average $|\rho|$ with evaluation return for pixel vs.\ semantic metrics. Fisher's $z$-test compares the strongest metric from each category.}
+\label{tab:h3}
+\end{table}
+
+The Slow LR configuration produces a statistically significant result: semantic metrics outpredict pixel metrics by more than $10\times$ in average correlation strength ($p = 0.008$). No other configuration reaches significance. This preliminary finding suggests that the slow learning rate decouples visual reconstruction from semantic learning, revealing that the policy relies primarily on game-state understanding rather than visual fidelity. Whether this pattern replicates under other training conditions is a key question for the remaining experiments.
+
+
+\section{Discussion}
+
+\subsection{What the Data Suggests So Far}
+
+The preliminary results paint a consistent picture across configurations. H1 and H2 receive support in models that are actively learning, with head position accuracy emerging as the single most reliable predictor of game performance. The Extended model's flat imagination metrics despite climbing performance suggest a two-phase learning dynamic: the world model learns quickly, then the policy gradually extracts better behavior from that fixed model.
+
+The Slow LR configuration's H3 result ($p = 0.008$) is the most notable finding to date. It provides the first evidence that what DreamerV3's world model learns about game \textit{structure}---not its visual appearance---is what enables effective policy learning. Under normal learning rates, both visual and semantic capabilities improve together, masking their separate contributions. The reduced learning rate appears to decouple them.
+
+\subsection{What This Means for the Final Paper}
+
+If the H3 finding replicates in the remaining configurations, it would suggest a general principle: model-based RL policies benefit from world model representations that capture task-relevant structure, not visual fidelity. If it does not replicate, it may be an artifact of the Slow LR training regime specifically. Either way, the result motivates investigating \textit{why} certain training conditions make the semantic--pixel distinction visible.
+
+The resolution experiment has already produced a useful control: lower resolution degrades gameplay dramatically (peak 9 vs.\ 54) while producing cleaner statistical signals (5/5 significant H1 trends). This confirms that the analysis pipeline is sensitive enough to detect real patterns and that the hypotheses behave as expected under varying conditions.
+
+\subsection{Limitations of the Current Analysis}
+
+These are preliminary results. Several limitations will be addressed in the final paper: (1)~the imagination horizon is capped at 60 steps, which may miss longer-term degradation patterns; (2)~collision prediction accuracy has not yet been implemented as a metric; (3)~all evaluation episodes come from stored recordings rather than fresh rollouts from each checkpoint's policy; and (4)~the $3\times$ learning rate model was excluded from analysis due to policy instability, though its competent world model combined with poor performance is itself informative---a good world model does not guarantee a good policy.
+
+
+\section{Ongoing Work and Timeline}
+\label{sec:ongoing}
+
+\textbf{Model 6 (doubled train ratio)} is currently training at 801K of 2M target steps, with early results suggesting faster convergence than the Baseline. This will provide a direct comparison on whether more imagination steps per real environment step improves learning.
+
+\textbf{Model 7 (large board)} will use a $20 \times 20$ grid with $128 \times 128$ observations, testing whether the world model scales to a harder planning problem and providing a visual demonstration for the final demo.
+
+\textbf{Timeline to completion:}
+\begin{itemize}
+    \item Model 6 training complete: $\sim$April 3
+    \item Model 6 analysis: $\sim$April 4
+    \item Model 7 training and analysis: April 5--12
+    \item Collision accuracy metric: April 7
+    \item Cross-configuration synthesis: April 15--20
+    \item Final paper draft: May 1
+    \item Final paper due: May 12
+\end{itemize}
+
+
+\section{Conclusion}
+
+Preliminary results from five DreamerV3 training configurations on Snake support all three hypotheses to varying degrees. Imagination accuracy improves over training and correlates with game performance, with head position error as the most reliable single predictor. The standout finding is that semantic metrics significantly outpredict pixel metrics under a slow learning rate ($p = 0.008$), providing early evidence that the world model's grasp of game structure---not visual quality---drives policy learning. Additional training configurations are in progress to determine whether this pattern generalizes.
+
+\section*{AI Usage Statement}
+
+Claude (Anthropic) was used to assist with formatting ideas into prose and structuring this document in AAAI conference format. All research questions, hypotheses, experimental design, analysis decisions, and interpretation of results are the author's own.
+
+\bibliography{references}
+
+\end{document}

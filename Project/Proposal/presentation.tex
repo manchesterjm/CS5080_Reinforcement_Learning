@@ -1,0 +1,232 @@
+\documentclass[aspectratio=169]{beamer}
+\usetheme{Madrid}
+\usecolortheme{default}
+
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath}
+
+\title{How Accurate Are Learned World Models?}
+\subtitle{An Empirical Analysis of DreamerV3's Imagination on Snake}
+\author{Josh Manchester}
+\institute{CS 5080 --- Reinforcement Learning\\Dr.\ Jugal Kalita\\Department of Computer Science\\University of Colorado Colorado Springs}
+\date{February 19, 2026}
+
+\begin{document}
+
+% ---- SLIDE 1: Title ----
+\begin{frame}
+\titlepage
+\end{frame}
+
+% ---- SLIDE 2: Motivation ----
+\begin{frame}{Model-Based RL: Learning by Dreaming}
+\begin{itemize}
+    \item Model-free RL learns by trial and error in the real environment
+    \item Model-based RL learns \textbf{how the environment works} first, then plans
+    \item DreamerV3 takes this further---it trains its policy \textbf{entirely inside the learned world model}
+    \begin{itemize}
+        \item The agent ``dreams'' about what might happen
+        \item It never touches the real environment during policy optimization
+    \end{itemize}
+    \item One algorithm, fixed hyperparameters, masters Atari, robotics, and Minecraft
+\end{itemize}
+
+\vspace{0.5em}
+\footnotesize{Hafner et al., \textit{Nature}, 2025}
+\end{frame}
+
+% ---- SLIDE 3: The Question ----
+\begin{frame}{The Research Question}
+\begin{center}
+\Large
+DreamerV3 trains inside imagined trajectories.\\[1em]
+\textbf{But how accurate are those imaginations?}\\[1em]
+\normalsize
+If the world model predicts the wrong outcome for an action,\\
+the agent is optimizing for a scenario that does not exist.\\[1em]
+\textit{Does the agent need accurate dreams to play well?}
+\end{center}
+\end{frame}
+
+% ---- SLIDE 4: Why This Matters ----
+\begin{frame}{Why This Matters}
+\begin{itemize}
+    \item Most DreamerV3 research focuses on \textbf{end-task performance}---scores, win rates, learning speed
+    \item Nobody has systematically measured \textbf{how faithful the imagination is} to reality
+    \item Understanding imagination accuracy could reveal:
+    \begin{itemize}
+        \item Why model-based RL works despite imperfect models
+        \item What the world model actually learns to represent
+        \item Where model-based RL breaks down
+    \end{itemize}
+\end{itemize}
+\end{frame}
+
+% ---- SLIDE 5: Why Snake? ----
+\begin{frame}{Why Snake?}
+\begin{columns}
+\begin{column}{0.55\textwidth}
+\begin{itemize}
+    \item \textbf{Simple, deterministic dynamics}
+    \begin{itemize}
+        \item Snake moves one cell per step
+        \item Collisions end the game
+        \item Only randomness: food placement
+    \end{itemize}
+    \item \textbf{Fully interpretable state}
+    \begin{itemize}
+        \item Snake head position
+        \item Body segment locations
+        \item Food location
+    \end{itemize}
+    \item \textbf{Easy to measure errors}---when the model imagines wrong, I can pinpoint exactly what went wrong
+    \item Not yet studied with DreamerV3
+\end{itemize}
+\end{column}
+\begin{column}{0.4\textwidth}
+\centering
+\textbf{Snake as an MDP}\\[0.5em]
+\begin{tabular}{ll}
+$\mathcal{S}$ & $N \times N$ grid \\
+$\mathcal{A}$ & \{Up, Down, L, R\} \\
+$R$ & +1 food, $-$1 collision \\
+$\gamma$ & 0.999 \\
+\end{tabular}
+\end{column}
+\end{columns}
+\end{frame}
+
+% ---- SLIDE 6: DreamerV3 Architecture ----
+\begin{frame}{DreamerV3 Architecture Overview}
+\begin{itemize}
+    \item \textbf{World Model} (RSSM---Recurrent State-Space Model):
+    \begin{itemize}
+        \item Encodes observations into latent states
+        \item Deterministic path (GRU) captures persistent information
+        \item Stochastic path models environment uncertainty
+        \item Predicts next states, rewards, and reconstructed observations
+    \end{itemize}
+    \item \textbf{Actor-Critic} trained entirely in imagined trajectories:
+    \begin{itemize}
+        \item Actor selects actions in latent space
+        \item Critic estimates value of imagined states
+        \item No real environment interaction during policy learning
+    \end{itemize}
+    \item Key innovations: symlog predictions, fixed hyperparameters across domains
+\end{itemize}
+
+\vspace{0.5em}
+\footnotesize{Built on: Hafner et al. (2019, 2020, 2021, 2025)}
+\end{frame}
+
+% ---- SLIDE 7: Method - Training & Extraction ----
+\begin{frame}{Method: Training and Trajectory Extraction}
+\textbf{Step 1: Train DreamerV3 on Snake}
+\begin{itemize}
+    \item Gymnasium-compatible Snake environment, 64$\times$64 RGB observations
+    \item 1 million environment steps, checkpoints every 50K steps (20 snapshots)
+\end{itemize}
+
+\vspace{0.5em}
+\textbf{Step 2: Extract Matched Trajectories at Each Checkpoint}
+\begin{enumerate}
+    \item Record a real trajectory using the current policy
+    \item Feed the initial observation into the world model
+    \item Roll out the world model with the \textbf{same action sequence}
+    \item Compare real vs.\ imagined frames side by side
+\end{enumerate}
+
+\vspace{0.5em}
+Same actions $\rightarrow$ only difference is the world model's prediction accuracy.
+\end{frame}
+
+% ---- SLIDE 8: Metrics ----
+\begin{frame}{Measuring Imagination Accuracy}
+\begin{columns}
+\begin{column}{0.48\textwidth}
+\textbf{Frame-Level Metrics}
+\begin{itemize}
+    \item \textbf{MSE}---pixel-level error
+    \item \textbf{SSIM}---structural fidelity
+\end{itemize}
+\vspace{0.5em}
+Captures overall visual quality of the world model's predictions.
+\end{column}
+\begin{column}{0.48\textwidth}
+\textbf{Semantic Metrics}
+\begin{itemize}
+    \item Head position error
+    \item Body segment accuracy
+    \item Food location accuracy
+    \item Collision prediction
+\end{itemize}
+\vspace{0.5em}
+Captures whether the model understands the \textit{game state}, not just the pixels.
+\end{column}
+\end{columns}
+
+\vspace{1em}
+\begin{center}
+\textbf{Key insight:} Blurry but correct $\neq$ sharp but wrong.\\
+Separating these tells me what the model actually learns.
+\end{center}
+\end{frame}
+
+% ---- SLIDE 9: Correlation Analysis ----
+\begin{frame}{Correlation: Do Better Dreams Mean Better Play?}
+\begin{itemize}
+    \item Track both \textbf{imagination accuracy} and \textbf{game performance} across 20 checkpoints
+    \item Three possible outcomes:
+\end{itemize}
+
+\vspace{0.5em}
+\begin{tabular}{lp{9cm}}
+\toprule
+\textbf{Outcome} & \textbf{What It Means} \\
+\midrule
+Accuracy $\uparrow$, Performance $\uparrow$ & Better dreams drive better play---imagination accuracy is critical \\
+Accuracy flat, Performance $\uparrow$ & Agent succeeds despite imperfect dreams---policy is robust to model errors \\
+Accuracy $\uparrow$, Performance flat & Model improves but policy does not benefit---something else is the bottleneck \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.5em}
+I will also test which \textbf{semantic metrics} (food location, collision prediction) are most predictive of performance.
+\end{frame}
+
+% ---- SLIDE 10: Timeline ----
+\begin{frame}{Timeline}
+\begin{table}
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{Date} & \textbf{Milestone} \\
+\midrule
+Feb 19 & Proposal presentation and paper \\
+Mar 1 & Snake environment, DreamerV3 training \\
+Mar 15 & Imagination extraction pipeline \\
+Mar 31 & Checkpoint analysis complete \\
+Apr 1 & Midterm presentation and paper \\
+Apr 15 & Correlation and semantic metrics \\
+May 7 & Final presentation \\
+May 12 & Final paper \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\vspace{0.5em}
+\textbf{Hardware:} RTX 5070 Ti (16GB VRAM), PyTorch 2.7.0, CUDA 12.8
+\end{frame}
+
+% ---- SLIDE 11: Questions ----
+\begin{frame}
+\begin{center}
+\Large \textbf{Questions?}\\[2em]
+\normalsize
+Josh Manchester\\
+\texttt{jmanches@uccs.edu}
+\end{center}
+\end{frame}
+
+\end{document}

@@ -9,6 +9,13 @@
 *.fdb_latexmk
 *.fls
 
+# Python
+__pycache__/
+*.pyc
+
+# Jupyter
+.ipynb_checkpoints/
+
 # OS files
 .DS_Store
 Thumbs.db

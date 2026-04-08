@@ -1,0 +1,283 @@
+\documentclass[aspectratio=169]{beamer}
+\usetheme{Madrid}
+\usecolortheme{default}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{amsmath}
+
+% Clean, professional look
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}[frame number]
+
+\title{How Accurate Are Learned World Models?}
+\subtitle{Midterm Progress Report --- DreamerV3 Imagination Fidelity on Snake}
+\author{Josh Manchester}
+\institute{CS 5080 --- Reinforcement Learning \\ University of Colorado Colorado Springs}
+\date{March 31, 2026}
+
+\begin{document}
+
+\begin{frame}
+\titlepage
+\end{frame}
+
+%------------------------------------------------------------
+\begin{frame}{Recap: Research Question}
+
+\textbf{Central Question:} Does DreamerV3 need accurate imagination to learn effective policies, or can it succeed even when its world model is wrong?
+
+\vspace{1em}
+\textbf{Three Hypotheses:}
+\begin{itemize}
+    \item[\textbf{H1:}] Imagination accuracy improves as training progresses
+    \item[\textbf{H2:}] Better imagination leads to better play
+    \item[\textbf{H3:}] Semantic accuracy matters more than pixel accuracy
+\end{itemize}
+
+\vspace{1em}
+\textit{Why it matters:} DreamerV3 trains its policy \textbf{entirely} inside imagined trajectories. If those trajectories are wrong, the agent is optimizing for scenarios that do not exist.
+\end{frame}
+
+%------------------------------------------------------------
+\begin{frame}{Recap: Why Snake?}
+
+\begin{columns}
+\begin{column}{0.55\textwidth}
+\textbf{Snake as testbed:}
+\begin{itemize}
+    \item $10 \times 10$ grid, $64 \times 64$ RGB observations
+    \item 4 discrete actions, deterministic transitions
+    \item Reward: $+1$ food, $-1$ collision, $-0.002$/step
+    \item Distinct colors $\rightarrow$ automated state extraction
+\end{itemize}
+
+\vspace{0.5em}
+\textbf{Why it works:}\\
+When the model gets something wrong, we know \textit{exactly} what it got wrong. No visual clutter, no ambiguity.
+\end{column}
+\begin{column}{0.42\textwidth}
+\textbf{Two levels of measurement:}\\[0.5em]
+\textbf{Pixel:} MSE, SSIM\\
+(``Do the images look alike?'')\\[0.5em]
+\textbf{Semantic:} Head error, body accuracy, food correct\\
+(``Does the model know the game state?'')
+\end{column}
+\end{columns}
+\end{frame}
+
+%------------------------------------------------------------
+\begin{frame}{What Has Been Completed}
+
+\textbf{Five training configurations --- all complete with full analysis:}
+
+\begin{table}
+\centering
+\small
+\begin{tabular}{llccl}
+\toprule
+\textbf{Config} & \textbf{Obs} & \textbf{Steps} & \textbf{LR} & \textbf{Key Change} \\
+\midrule
+Baseline    & 64$\times$64 & 1.1M & 1e-4 & --- \\
+Extended    & 64$\times$64 & 2M   & 1e-4 & Fine-tuned, longer episodes \\
+Slow LR     & 64$\times$64 & 2M   & 3e-5 & $\frac{1}{3}\times$ learning rate \\
+Res-32      & 32$\times$32 & 530K & 1e-4 & Lower resolution \\
+Res-16      & 16$\times$16 & 500K & 1e-4 & Lowest resolution \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\vspace{0.5em}
+Also trained a $3\times$ LR model --- world model learned the game, but policy never stabilized.\\
+Model 6 (doubled train ratio) currently at 801K / 2M steps.
+\end{frame}
+
+%------------------------------------------------------------
+\begin{frame}{Game Performance Across Configurations}
+
+\begin{table}
+\centering
+\begin{tabular}{lccc}
+\toprule
+\textbf{Config} & \textbf{Mean Return} & \textbf{Peak} & \textbf{Final 5 Avg} \\
+\midrule
+Extended    & 31.17 & 54.26 & 36.50 \\
+Slow LR     & 16.57 & 24.60 & 19.16 \\
+Baseline    &  9.82 & 25.71 & 22.28 \\
+Res-32      &  1.06 & 13.60 &  9.83 \\
+Res-16      &  0.78 &  9.13 &  7.44 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\vspace{0.5em}
+\begin{itemize}
+    \item Resolution \textbf{dramatically} affects gameplay
+    \item Fine-tuning + longer episodes gives the biggest boost
+    \item Slow LR competitive but still improving at 2M steps
+\end{itemize}
+\end{frame}
+
+%------------------------------------------------------------
+\begin{frame}{Preliminary H1: Imagination Improves Over Training}
+
+\begin{columns}
+\begin{column}{0.45\textwidth}
+\begin{table}
+\centering
+\small
+\begin{tabular}{lcc}
+\toprule
+\textbf{Config} & \textbf{Impr.} & \textbf{Sig.} \\
+\midrule
+Res-16      & 5/5 & 5/5 \\
+Res-32      & 5/5 & 5/5 \\
+Baseline    & 5/5 & 4/5 \\
+Slow LR     & 5/5 & 2/5 \\
+Extended    & 3/5 & 0/5 \\
+\bottomrule
+\end{tabular}
+\end{table}
+\end{column}
+\begin{column}{0.52\textwidth}
+\textbf{Emerging pattern:}
+\begin{itemize}
+    \item H1 strongest in \textbf{actively-learning} models
+    \item Extended model inherited a good world model $\rightarrow$ flat imagination trends
+    \item World model learns visuals \textbf{quickly}, then plateaus
+    \item Policy learning is the \textbf{slow} part
+\end{itemize}
+\end{column}
+\end{columns}
+
+\vspace{0.5em}
+Baseline head error: 0.268 $\rightarrow$ 0.023 grid cells ($\rho = -0.85$, $p < 0.001$)\\[0.3em]
+\textbf{Assessment:} H1 is well-supported. Expect this to hold in remaining runs.
+\end{frame}
+
+%------------------------------------------------------------
+\begin{frame}{Preliminary H2: Imagination Correlates with Performance}
+
+\begin{table}
+\centering
+\small
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Metric} & \textbf{Base} & \textbf{Ext} & \textbf{Slow} & \textbf{R32} & \textbf{R16} \\
+\midrule
+MSE              & .570$^{*}$  & .099 & .023 & .603$^{*}$  & .564$^{*}$  \\
+SSIM             & .630$^{**}$ & .120 & .066 & .660$^{**}$ & .641$^{*}$  \\
+Head err         & .843$^{***}$& .163 & .514$^{*}$  & .513$^{*}$  & .678$^{**}$ \\
+Body acc         & .352        & .511$^{*}$  & .740$^{***}$& .292 & .532$^{*}$  \\
+Food corr        & .597$^{**}$ & .090 & .310 & .654$^{**}$ & .636$^{**}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Look at the Slow LR column:} Pixel metrics $\approx$ 0. Semantic metrics strong.\\[0.3em]
+\textbf{Assessment:} H2 is well-supported. Head error and body accuracy are reliable predictors. Extended model is weaker because the bottleneck shifted from world model to policy.
+\end{frame}
+
+%------------------------------------------------------------
+\begin{frame}{Preliminary H3: Semantic vs. Pixel --- The Key Finding}
+
+\begin{table}
+\centering
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Config} & \textbf{Pixel} $\overline{|\rho|}$ & \textbf{Semantic} $\overline{|\rho|}$ & \textbf{Fisher $z$} & $p$ \\
+\midrule
+\textbf{Slow LR} & \textbf{0.045} & \textbf{0.522} & \textbf{2.65} & \textbf{0.008} \\
+Extended    & 0.110 & 0.255 & ---  & n.s. \\
+Baseline    & 0.600 & 0.597 & 1.42 & 0.154 \\
+Res-32      & 0.631 & 0.486 & ---  & n.s. \\
+Res-16      & 0.603 & 0.615 & ---  & n.s. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\vspace{0.3em}
+Slow LR: Semantic metrics predict performance \textbf{$>$10$\times$} better than pixel metrics.
+
+\vspace{0.3em}
+\textbf{Why only Slow LR?} The reduced learning rate \textbf{decouples} visual reconstruction from semantic learning. Under normal LR, both improve together, masking the distinction.
+
+\vspace{0.3em}
+\textbf{Assessment:} One significant result so far. Need remaining runs to determine if this generalizes or is specific to the slow LR regime.
+\end{frame}
+
+%------------------------------------------------------------
+\begin{frame}{Resolution Experiment Insights}
+
+\textbf{Same game, different visual fidelity:}
+
+\vspace{0.5em}
+\begin{columns}
+\begin{column}{0.48\textwidth}
+\textbf{Lower resolution produces:}
+\begin{itemize}
+    \item Worse gameplay (peak 9 vs 54)
+    \item But cleaner statistical signals (5/5 significant H1 vs 0/5)
+    \item World model achieves high accuracy quickly on simple visual task
+\end{itemize}
+\end{column}
+\begin{column}{0.48\textwidth}
+\textbf{Preliminary interpretation:}
+\begin{itemize}
+    \item Good dreams about a blurry world are not enough
+    \item Agent needs spatial detail for \textit{planning}
+    \item Confirms analysis pipeline detects real patterns
+    \item Useful control for the final paper
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+%------------------------------------------------------------
+\begin{frame}{Remaining Work and Timeline}
+
+\textbf{In progress:}
+\begin{itemize}
+    \item Model 6 (doubled train ratio): 801K / 2M steps --- estimated complete April 3
+    \item Will test whether more imagination per real step improves learning
+\end{itemize}
+
+\vspace{0.5em}
+\textbf{Planned for final paper:}
+\begin{itemize}
+    \item Model 7: $20 \times 20$ grid, $128 \times 128$ obs --- does the world model scale?
+    \item Collision prediction accuracy (new semantic metric)
+    \item Longer imagination horizons --- how fast do predictions degrade?
+    \item Cross-configuration synthesis of all H1/H2/H3 results
+\end{itemize}
+
+\vspace{0.5em}
+\textbf{Key question for final paper:} Does the H3 result ($p = 0.008$) replicate under other training conditions, or is it specific to the slow LR regime?
+
+\vspace{0.5em}
+\textbf{Hardware:} NVIDIA RTX 5070 Ti (16 GB), PyTorch 2.7.0, CUDA 12.8
+\end{frame}
+
+%------------------------------------------------------------
+\begin{frame}{Summary --- Where Things Stand}
+
+\begin{enumerate}
+    \item \textbf{H1:} Well-supported. Imagination improves over training, strongest in actively-learning models.
+    \item \textbf{H2:} Well-supported. Head error and body accuracy are the most reliable predictors ($\rho$ up to $-0.84$).
+    \item \textbf{H3:} Significant in one configuration ($p = 0.008$). Semantic $>$ pixel by $>$10$\times$ under slow LR. Remaining runs will test generalizability.
+\end{enumerate}
+
+\vspace{0.5em}
+\textbf{Emerging big picture:} DreamerV3 does not need visually accurate dreams. It needs dreams that capture the right \textit{structure}. The world model's grasp of game semantics---not pixel quality---appears to drive policy learning.
+
+\vspace{0.5em}
+\textbf{On track for final paper} --- analysis pipeline operational, 5/7 planned runs complete.
+
+\end{frame}
+
+%------------------------------------------------------------
+\begin{frame}{}
+\centering
+\Huge Questions?
+\end{frame}
+
+\end{document}

@@ -1,0 +1,102 @@
+\documentclass[letterpaper]{article}
+\usepackage{aaai24}
+\usepackage{times}
+\usepackage{helvet}
+\usepackage{courier}
+\usepackage[hyphens]{url}
+\usepackage{booktabs}
+\usepackage{natbib}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+\title{Short Questions 4}
+\author{
+    Josh Manchester\\
+    Department of Computer Science\\
+    University of Colorado Colorado Springs\\
+    Colorado Springs, CO 80918\\
+    \texttt{jmanches@uccs.edu}
+}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This paper addresses three topics in Monte Carlo reinforcement learning: how agents can explore without relying on Exploring Starts, the distinction between on-policy and off-policy methods, and the importance sampling ratio used to transfer returns between policies. These concepts build directly on the Exploring Starts limitations discussed in Short Questions 3, showing how practical RL agents handle exploration and learn from experience generated under different policies.
+\end{abstract}
+
+\section*{Question 1}
+\textit{Describe how an RL agent, one that is not forced to randomly perform every $\langle state, action \rangle$ pair at the beginning of an episode, can explore every $\langle state, action \rangle$ pair during training. How can we write a non-Exploring-Starts algorithm that learns values? Write out any formulas needed.}
+
+\vspace{0.5em}
+
+The solution is to use an \textbf{$\varepsilon$-soft policy}, where the agent balances exploitation and exploration at every step \citep{sutton2018reinforcement}. Exploitation means doing the best action all the time---picking the current best action in every state. Exploration means not doing that all the time---trying non-best actions sometimes. Instead of forcing exploration at the start of each episode, the agent explores \textit{throughout} the episode by occasionally taking random actions.
+
+The most common version is the \textbf{$\varepsilon$-greedy policy}. Given a small $\varepsilon > 0$ and $|\mathcal{A}(s)|$ possible actions in state $s$, every action gets at least probability $\varepsilon / |\mathcal{A}(s)|$:
+\[
+\pi(a \mid s) =
+\begin{cases}
+1 - \varepsilon + \dfrac{\varepsilon}{|\mathcal{A}(s)|} & \text{if } a = a^* = \arg\max_{a'} Q(s, a') \\[6pt]
+\dfrac{\varepsilon}{|\mathcal{A}(s)|} & \text{if } a \neq a^*
+\end{cases}
+\]
+
+As a concrete example, suppose $\varepsilon = 0.10$ and $|\mathcal{A}(s)| = 5$. Every action is possible with probability at least $0.10 / 5 = 0.02$. The best action $a^*$ gets probability $1 - 0.10 + 0.10/5 = 0.92$. We can verify: $0.92 + 4(0.02) = 1.0$. So the agent picks the best action 92\% of the time but still tries every other action 2\% of the time. No state-action pair is ever completely ignored.
+
+The full algorithm is \textbf{On-Policy First-Visit MC Control} (Sutton \& Barto, p.\ 101). We initialize $Q(s, a)$ arbitrarily and set $\pi$ to be $\varepsilon$-greedy with respect to $Q$. For each episode, we generate the episode using $\pi$, then work backward through the steps computing $G \leftarrow \gamma G + R_{t+1}$. For the first visit to each $(S_t, A_t)$ pair, we append $G$ to its return list and update $Q(S_t, A_t) \leftarrow \text{average}(\text{Returns}(S_t, A_t))$. Then we find $A^* \leftarrow \arg\max_a Q(S_t, a)$ and update the policy to be $\varepsilon$-greedy with respect to the new $Q$ values. This cycle of evaluation and improvement repeats, converging toward the optimal $\varepsilon$-soft policy.
+
+This works because the $\varepsilon$-soft guarantee means every action in every reachable state has a nonzero probability of being selected at every time step. The agent does not need special starting conditions to explore---it explores naturally as a side effect of the policy itself.
+
+\section*{Question 2}
+\textit{Differentiate between on-policy and off-policy reinforcement learning algorithms.}
+
+\vspace{0.5em}
+
+The difference comes down to whether the agent learns about the same policy it is using to act, or a different one \citep{sutton2018reinforcement}.
+
+\textbf{On-policy} methods start with a policy $\pi$ and improve it repeatedly toward $\pi_*$. The agent follows $\pi$, collects experience, and uses that experience to improve the same $\pi$. The $\varepsilon$-greedy MC control algorithm from Question 1 is a good example---the agent acts $\varepsilon$-greedy, evaluates the $\varepsilon$-greedy policy, and improves it. The tradeoff is that the learned policy can never be fully greedy because it must keep exploring, so on-policy methods converge to the best $\varepsilon$-soft policy rather than the true optimal policy.
+
+\textbf{Off-policy} methods use two separate policies: a \textbf{behavior policy} $b$ that generates the episodes and a \textbf{target policy} $\pi$ that the agent is trying to learn about. The agent is acting using $b$, but trying to learn $\pi$. One way to think about it is that someone else (or the agent itself) uses $b$ well, generating lots of episodes of training, and the agent learns $\pi$ from that experience. The behavior policy can be $\varepsilon$-greedy or even fully random, while the target policy can be purely greedy. This separation means the agent can learn the optimal policy while still exploring freely.
+
+Off-policy learning is the more general approach. On-policy learning is actually the special case where $b = \pi$---the behavior and target policies are the same \citep{sutton2018reinforcement}. However, off-policy methods come with higher variance and may need another environment or an expert to learn from, which can be costly. They also require a way to correct for the mismatch between the two policies, which is where importance sampling comes in.
+
+\section*{Question 3}
+\textit{When an agent learns $v_\pi(s)$ in a target policy $\pi$ from a behavior policy $b$, it needs to transfer $G_t$ values (Returns) from policy $b$ to policy $\pi$. What formula can an agent use to do so? Write the formula and discuss it briefly.}
+
+\vspace{0.5em}
+
+The core idea is that we can take values from one distribution and scale them by a weighted factor to estimate another distribution. As an analogy, suppose we know the rainfall distribution in downtown Colorado Springs but want to estimate the rainfall in north Colorado Springs. If we have a way to relate the two distributions, we can scale the values we already have instead of collecting new data from scratch.
+
+In off-policy RL, the behavior policy $b$ generates episodes with discounted returns $G_{t,b}$ at each time step. We want to transfer these into returns under the target policy: $G_{t,\pi} = \rho_t \cdot G_{t,b}$. The scaling factor $\rho_t$ is the \textbf{importance sampling ratio} \citep{sutton2018reinforcement}. It is the probability of the states and actions occurring under the target policy $\pi$ from time $t$ to the end of the episode, divided by the probability under the behavior policy $b$:
+
+\[
+\rho_t = \frac{\pi(a_t \mid S_t) \cdot \pi(a_{t+1} \mid S_{t+1}) \cdot \ldots \cdot \pi(a_{T-1} \mid S_{T-1})}{b(a_t \mid S_t) \cdot b(a_{t+1} \mid S_{t+1}) \cdot \ldots \cdot b(a_{T-1} \mid S_{T-1})}
+= \prod_{k=t}^{T-1} \frac{\pi(A_k \mid S_k)}{b(A_k \mid S_k)}
+\]
+
+The state transition probabilities $p(s' \mid s, a)$ appear in both the numerator and denominator and cancel out, so the ratio depends only on the two policies and the action sequence---not on the MDP dynamics.
+
+With $\rho_t$ in hand, we can compute $V_\pi(s) = \mathbb{E}\left[\rho_t \cdot G_{t,b} \mid S_t = s\right]$. The book gives two ways to do this. Define $\tau(s)$ as the set of time points at which state $s$ occurs in episodes of training using behavior policy $b$, and $|\tau(s)|$ as the number of such visits.
+
+\textbf{Ordinary importance sampling} divides the sum of weighted returns by the number of visits:
+\[
+V_\pi(s) = \frac{\sum_{t \in \tau(s)} \rho_t \, G_{t,b}}{|\tau(s)|}
+\]
+This estimator is unbiased but can have high variance because $\rho_t$ is a product over many time steps---if the episode is long, the product can become very large or very small.
+
+\textbf{Weighted importance sampling} divides by the sum of the ratios instead:
+\[
+V_\pi(s) = \frac{\sum_{t \in \tau(s)} \rho_t \, G_{t,b}}{\sum_{t \in \tau(s)} \rho_t}
+\]
+This version is biased but has much lower variance in practice, which usually makes it the better choice \citep{sutton2018reinforcement}. The requirement for importance sampling to work is \textbf{coverage}: $b(a \mid s) > 0$ wherever $\pi(a \mid s) > 0$, so that the denominator is never zero.
+
+\section*{AI Use Statement}
+
+Claude (Anthropic) was used to format my answers in AAAI LaTeX format.
+
+\bibliography{references}
+
+\end{document}

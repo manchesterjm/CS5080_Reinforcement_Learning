@@ -9,7 +9,7 @@
 \usepackage{natbib}
 \usepackage{amsmath}
 
-\title{Can Modern Deep RL Overcome Sparse Rewards? \\A Case Study in Minesweeper}
+\title{How Accurate Are Learned World Models? \\An Empirical Analysis of DreamerV3's Imagination on Snake}
 \author{
     Josh Manchester\\
     Department of Computer Science\\
@@ -23,147 +23,145 @@
 \maketitle
 
 \begin{abstract}
-Sparse reward environments remain a fundamental challenge in reinforcement learning, where agents receive feedback only upon task completion rather than incrementally. This proposal investigates whether modern deep RL algorithms can achieve competent performance in Minesweeper---a domain characterized by sparse rewards, large state spaces, and partial observability. Prior work combining Deep Q-Networks with constraint propagation logic achieved an 88\% win rate, while pure DQN achieved only 1\%. This dramatic gap raises a central question: can advanced RL techniques such as Proximal Policy Optimization (PPO), Soft Actor-Critic (SAC), reward shaping, and curriculum learning close this performance gap, or is domain knowledge fundamentally required? This project will systematically evaluate these approaches to provide empirical guidance on the limitations of pure RL in sparse reward domains.
+DreamerV3 learns a world model from experience and then trains its policy entirely inside that model---it learns by dreaming rather than by doing. This approach works across dozens of domains without changing a single hyperparameter \citep{hafner2025dreamerv3}. But how accurate are those dreams? If the world model gets something wrong, how does the agent still succeed? And does imagination accuracy even matter for performance? This work tests this by training DreamerV3 on Snake---a game with simple, deterministic dynamics that make imagination errors easy to measure. By extracting imagined trajectories at multiple training checkpoints and comparing them against real game states, this analysis quantifies what the world model gets right, what it gets wrong, and whether imagination accuracy actually correlates with game performance. Snake has not been studied with DreamerV3 before, and no prior work has systematically measured imagination fidelity in this way.
 \end{abstract}
 
 \section{Introduction}
 
-Reinforcement learning has achieved remarkable success in domains ranging from Atari games to robotic control \citep{mnih2015human, haarnoja2018soft}. However, sparse reward environments---where agents receive meaningful feedback only at episode termination---remain a persistent challenge \citep{sutton2018reinforcement}. Recent work continues to address this fundamental limitation through techniques such as reward decomposition \citep{chen2024stas} and behavior-driven exploration \citep{zhang2025betadqn}.
+Model-based reinforcement learning takes a fundamentally different approach from model-free methods. Instead of learning a policy directly from environment interactions, model-based agents first learn how the environment works and then use that learned model to plan \citep{sutton2018rl}. The Dreamer family of algorithms takes this idea further---the agent trains its policy entirely inside the learned world model, never touching the real environment during policy optimization \citep{hafner2020dreamerv1, hafner2021dreamerv2, hafner2025dreamerv3}.
 
-Minesweeper presents an ideal testbed for investigating sparse reward limitations. The game requires an agent to uncover all safe cells on a grid while avoiding hidden mines. Feedback is binary and delayed---the agent wins or loses only when the game ends. Additionally, the state space is enormous (over 5.3 million possible configurations even for a 6$\times$6 grid with four mines), and the environment is partially observable since mine locations are hidden \citep{phan2025training}.
+DreamerV3 represents the current state of the art in this approach. It masters Atari games, continuous control tasks, and even collects diamonds in Minecraft, all with the same fixed hyperparameters \citep{hafner2025dreamerv3}. However, most research on DreamerV3 focuses on end-task performance---how high the score is, how fast the agent learns. What gets less attention is the world model itself. The agent is training inside an imagined version of the environment. So how faithful is that imagination to reality?
 
-Recent work by \citet{phan2025training} achieved 93\% win rates on small 6$\times$6 grids using DQN and supervised learning, while \citet{jiang2025metarl} explored meta-RL approaches using Minesweeper as a test environment for language model agents. However, performance on larger boards remains challenging.
+This is not just an academic question. If the world model predicts the wrong outcome for an action, the agent is optimizing for a scenario that does not exist. Understanding when and how imagination diverges from reality could reveal fundamental insights about why model-based RL works as well as it does---and where it breaks down.
 
-In prior work, I implemented a Deep Q-Network agent for Minesweeper that achieved only a 1\% win rate on standard 16$\times$16 difficulty. However, when combining the neural network with AC-3 constraint propagation logic---using the network only for ``guessing'' when logic could not determine a safe move---the hybrid system achieved an 88\% win rate. This 87-point performance gap motivates the central research question:
+The central question is: \textbf{Does DreamerV3 need accurate imagination to learn effective policies, or can it succeed even when its world model is wrong?} This decomposes into three testable hypotheses:
+\begin{itemize}
+    \item[\textbf{H1:}] The world model's imagination gets more accurate as training goes on---it learns to dream better over time.
+    \item[\textbf{H2:}] Better imagination leads to better play. If the dreams are more accurate, the agent scores higher.
+    \item[\textbf{H3:}] Getting the game state right matters more than getting the pixels right. Knowing where the snake and food are is more important than producing a sharp image.
+\end{itemize}
+If H2 holds, imagination quality is a bottleneck---improve the world model and the policy improves with it. But if H2 is weak or flat-out wrong, that means the world model is capturing the right structure for making decisions without actually being a faithful picture of reality. That would go a long way toward explaining why DreamerV3 works across so many different domains without changing anything.
 
-\textit{Can modern deep RL algorithms overcome the sparse reward problem in Minesweeper, or is domain-specific knowledge fundamentally required for competent play?}
+This work investigates the question by training DreamerV3 on Snake. Snake is an ideal testbed for imagination analysis because its dynamics are simple and deterministic: the snake moves one cell per step in the current direction, food appears at random locations, and the game ends on collision with a wall or the snake's own body. This simplicity makes it possible to precisely identify what the world model gets right and what it gets wrong. There is no visual clutter, no stochastic physics, no ambiguity. When the model imagines a trajectory, each frame can be compared directly against what would actually happen.
+
+The contributions of this work are:
+\begin{enumerate}
+    \item A systematic analysis of DreamerV3's imagination accuracy on Snake, measuring how well imagined trajectories match real game states across training
+    \item Evidence on whether imagination accuracy correlates with task performance---does the agent need accurate dreams to play well?
+    \item An element-level breakdown of what the world model learns to predict (snake position, food location, collisions) and what it struggles with
+\end{enumerate}
 
 \section{Background}
 
-\subsection{Minesweeper as a Markov Decision Process}
+\subsection{World Models in Reinforcement Learning}
 
-We formalize Minesweeper as a Markov Decision Process (MDP) defined by the tuple $(\mathcal{S}, \mathcal{A}, P, R, \gamma)$:
+The idea of learning a model of the environment and using it for planning has a long history in RL \citep{sutton2018rl}. \citet{ha2018world} demonstrated that an agent could learn a compressed representation of its environment using a variational autoencoder and a recurrent network, then train a policy entirely within that learned model. This showed that ``dreaming'' about an environment could be enough to learn effective behavior.
 
-\textbf{State Space} $\mathcal{S}$: Each state $s \in \mathcal{S}$ is represented as an $H \times W \times C$ tensor, where $H$ and $W$ are the board dimensions and $C$ is the number of feature channels. Following \citet{phan2025training}, we encode each cell using 12 channels: one channel for each possible neighbor count (0--8), one for unrevealed cells, one for flagged cells, and one for revealed status. For a 16$\times$16 board, the state space contains over $12^{256}$ possible configurations, though the reachable subset is smaller due to game constraints.
+\citet{hafner2019planet} formalized this with the Recurrent State-Space Model (RSSM), which maintains both a deterministic recurrent state and a stochastic latent state. The deterministic path captures persistent information across time steps, while the stochastic path models uncertainty about the environment. This architecture became the backbone of all subsequent Dreamer agents.
 
-\textbf{Action Space} $\mathcal{A}$: The action space consists of $H \times W$ discrete actions, where each action corresponds to revealing a specific cell. Invalid actions (revealing already-revealed cells) are masked during action selection. For a 16$\times$16 board, $|\mathcal{A}| = 256$.
+\subsection{The Dreamer Family}
 
-\textbf{Transition Function} $P(s'|s,a)$: Transitions are stochastic from the agent's perspective due to partial observability---the agent cannot observe mine locations until revealed. Revealing a safe cell with zero adjacent mines triggers recursive reveals of neighboring cells.
+DreamerV1 introduced the idea of training actor-critic policies entirely within imagined trajectories generated by the RSSM \citep{hafner2020dreamerv1}. DreamerV2 improved this with discrete latent representations, replacing the Gaussian latents with categorical variables, which produced sharper world model predictions and achieved human-level performance on the Atari benchmark \citep{hafner2021dreamerv2}.
 
-\textbf{Reward Function} $R(s,a,s')$: In the sparse reward setting, $R = +1$ for winning (all safe cells revealed), $R = -1$ for losing (mine revealed), and $R = 0$ otherwise.
+DreamerV3 further refined the approach with symlog predictions for handling varying reward scales and a fixed set of hyperparameters that work across diverse domains \citep{hafner2025dreamerv3}. It was the first single algorithm to collect diamonds in Minecraft from scratch---a task requiring long-horizon planning across a complex open world. The key to DreamerV3's generality is that it treats world modeling as a separate problem from policy optimization, letting the same architecture adapt to radically different environments.
 
-\textbf{Discount Factor} $\gamma$: Set to 0.99 to encourage efficient solutions while maintaining long-term planning.
+\subsection{Related Work on World Model Analysis}
 
-\subsection{Sparse Rewards in Reinforcement Learning}
+Several works have extended or modified the Dreamer architecture. \citet{deng2022dreamerpro} removed the reconstruction objective entirely, training the world model with prototypical representations instead. \citet{zhang2023oderssm} extended the RSSM to handle irregularly sampled data using ordinary differential equations. \citet{sekar2020plan2explore} used the world model for self-supervised exploration without task rewards. \citet{lin2024dynalang} incorporated language into the world model, enabling agents to use instructions and descriptions for planning.
 
-The sparse reward problem occurs when an agent receives non-zero rewards only rarely, making credit assignment difficult \citep{sutton2018reinforcement}. \citet{murphy2024reinforcement} provides a comprehensive overview of approaches to this challenge, including reward shaping, intrinsic motivation, and hierarchical methods. Recent advances include spatial-temporal return decomposition \citep{chen2024stas} and addressing ``lazy agent'' phenomena in multi-agent settings \citep{liu2023lazy}.
+However, these works focus on improving the world model or the policy---not on measuring how accurate the imagination actually is. \citet{walker2023modelbased} investigated model-based learning's role in exploration and transfer, and \citet{sullivan2023rewardscale} analyzed whether DreamerV3's design choices transfer to model-free methods. But a direct, systematic measurement of imagination fidelity---comparing dreamed trajectories against ground truth---remains unexplored.
 
-\subsection{Deep Q-Network Improvements}
+\subsection{Snake as an MDP}
 
-Since the foundational DQN work \citep{mnih2015human}, numerous improvements have been proposed. Recent advances include $\beta$-DQN, which augments DQN with a behavior function for improved exploration \citep{zhang2025betadqn}, and Elastic Step DQN, which dynamically varies step sizes to alleviate overestimation bias \citep{han2024elastic}. These improvements may help address the challenges of sparse reward environments.
+Snake is formalized as a Markov Decision Process $(\mathcal{S}, \mathcal{A}, P, R, \gamma)$:
 
-\subsection{Policy Gradient Methods}
+\textbf{State Space} $\mathcal{S}$: Each state is a grid of size $N \times N$ containing the snake body segments, the head position, the current direction, and the food location. States are rendered as RGB images for DreamerV3's visual encoder.
 
-Policy gradient methods offer an alternative to value-based approaches. Proximal Policy Optimization (PPO) uses a clipped objective function for stable policy updates \citep{schulman2017proximal}, while Soft Actor-Critic (SAC) combines off-policy learning with maximum entropy objectives for robust exploration \citep{haarnoja2018soft}. These methods may offer advantages in sparse reward settings due to their different exploration characteristics.
+\textbf{Action Space} $\mathcal{A}$: Four discrete actions---up, down, left, right. The snake cannot reverse direction (moving left while heading right has no effect).
 
-\subsection{Curriculum Learning}
+\textbf{Transition Function} $P(s'|s,a)$: Transitions are deterministic given the current state and action. The snake moves one cell in the chosen direction. If it eats food, it grows by one segment and new food spawns at a random empty cell. The only stochasticity is food placement.
 
-Curriculum learning---training agents on progressively harder tasks---has shown promise for difficult RL problems \citep{parker2022syllabus}. By starting with simpler versions of a task and gradually increasing difficulty, agents may develop foundational skills that transfer to harder settings.
+\textbf{Reward Function} $R(s,a,s')$: $+1$ for eating food, $-1$ for collision (game over), $0$ otherwise.
+
+\textbf{Discount Factor} $\gamma$: Set to 0.999 to encourage long-horizon survival and food collection.
+
+The simplicity of these dynamics is precisely why Snake is a good choice for imagination analysis. Every transition except food spawning is fully predictable, making it possible to measure exactly where the world model's predictions diverge from reality.
 
 \section{Proposed Methods}
 
-I propose to systematically evaluate the following approaches on Minesweeper:
+\subsection{Training DreamerV3 on Snake}
 
-\subsection{Baseline: Deep Q-Network}
+A Gymnasium-compatible Snake environment will be implemented and used to train DreamerV3 with the publicly available codebase. The environment renders the game as a small RGB image (e.g., 64$\times$64 pixels) with distinct colors for the snake head, body, food, and background. Training uses a standard grid size (e.g., 10$\times$10), and performance data is collected over the full training run.
 
-The existing DQN implementation with Double DQN and Dueling architecture will serve as the baseline, currently achieving approximately 1\% win rate on 16$\times$16 boards with 40 mines.
+\subsection{Extracting Imagined Trajectories}
 
-\subsection{DQN Improvements}
-
-Building on recent advances, I will implement:
-\begin{itemize}
-    \item $\beta$-DQN with behavior-driven exploration \citep{zhang2025betadqn}
-    \item Elastic Step DQN for reduced overestimation \citep{han2024elastic}
-\end{itemize}
-
-\subsection{Policy Gradient Methods}
-
-\textbf{PPO:} Proximal Policy Optimization may provide more stable learning in sparse reward settings due to its conservative policy updates \citep{schulman2017proximal}.
-
-\textbf{SAC:} Soft Actor-Critic's entropy maximization encourages exploration, which may help the agent discover winning strategies more efficiently \citep{haarnoja2018soft}.
-
-\subsection{Reward Shaping}
-
-Instead of receiving reward only at game end, I will experiment with intermediate rewards:
-\begin{itemize}
-    \item $+1$ for each safe cell revealed
-    \item $-0.5$ for incorrect flag placement
-    \item $+10$ for game completion (scaled by remaining cells)
-\end{itemize}
-
-\subsection{Curriculum Learning}
-
-Following \citet{parker2022syllabus}, I will implement a curriculum that gradually increases difficulty:
+At regular checkpoints during training (e.g., every 50,000 environment steps), the following procedure is applied:
 \begin{enumerate}
-    \item 5$\times$5 grid with 3 mines (easy)
-    \item 8$\times$8 grid with 10 mines (medium)
-    \item 16$\times$16 grid with 40 mines (expert)
+    \item Record a real trajectory by running the current policy in the actual environment
+    \item Feed the initial observation from that trajectory into the world model
+    \item Roll out the world model using the same sequence of actions, generating an imagined trajectory
+    \item Compare the two trajectories frame by frame
 \end{enumerate}
-The agent will advance to harder levels only after achieving a threshold win rate.
 
-\section{Evaluation}
+This gives us matched pairs of real and imagined game states at each checkpoint, using identical action sequences so the only difference is the world model's prediction accuracy.
 
-Performance will be measured by:
+\subsection{Measuring Imagination Accuracy}
+
+Accuracy is evaluated at two levels:
+
+\textbf{Frame-level metrics:} Mean Squared Error (MSE) and Structural Similarity Index (SSIM) between imagined and real frames. These capture overall visual fidelity of the world model's predictions.
+
+\textbf{Semantic metrics:} Since Snake's state is fully interpretable, game-specific information can be extracted from both real and imagined frames:
 \begin{itemize}
-    \item \textbf{Win rate:} Percentage of games won across 10,000 test episodes
-    \item \textbf{Sample efficiency:} Training steps required to reach threshold performance
-    \item \textbf{Learning curves:} Win rate versus training episodes
+    \item Snake head position error (Euclidean distance)
+    \item Snake body segment accuracy (percentage of correctly placed segments)
+    \item Food location accuracy (correct or not)
+    \item Collision prediction accuracy (does the model correctly predict game-over states?)
 \end{itemize}
 
-All methods will be compared against baselines from our prior work and the literature:
+These semantic metrics go beyond pixel similarity. The world model might produce slightly blurry images (low SSIM) while still correctly representing the snake's position and the food location. Conversely, it might produce sharp images that place the snake in the wrong spot. Separating these reveals what the model actually learns.
+
+\subsection{Correlation Analysis}
+
+The analysis correlates imagination accuracy with game performance across checkpoints. If the agent's score improves while imagination accuracy stays flat, that suggests the policy can succeed despite an imperfect world model. If accuracy and performance track together, that suggests accurate imagination is critical. The analysis also examines whether specific semantic metrics (e.g., food location accuracy) are more predictive of performance than others.
+
+\section{Evaluation Plan}
 
 \begin{table}[h]
 \centering
-\begin{tabular}{lcc}
+\begin{tabular}{ll}
 \toprule
-\textbf{Method} & \textbf{Board Size} & \textbf{Win Rate} \\
+\textbf{Metric} & \textbf{What It Measures} \\
 \midrule
-Random baseline & 16$\times$16 & $<$1\% \\
-Pure DQN (ours) & 16$\times$16 & 1\% \\
-DQN + CNN \citep{phan2025training} & 6$\times$6 & 93\% \\
-DQN + CNN \citep{phan2025training} & 8$\times$8 & 72\% \\
-Hybrid DQN + AC-3 (ours) & 16$\times$16 & 88\% \\
-Human expert & 16$\times$16 & $\sim$85\% \\
-\midrule
-\textit{Target: Modern RL} & \textit{16$\times$16} & \textit{$>$50\%?} \\
+Game score & Average food collected per episode \\
+Survival length & Average steps before collision \\
+MSE & Pixel-level imagination error \\
+SSIM & Structural imagination fidelity \\
+Head position error & Spatial accuracy of predictions \\
+Body accuracy & Percentage of correct segments \\
+Food accuracy & Whether food location is correct \\
+Collision accuracy & Game-over prediction correctness \\
 \bottomrule
 \end{tabular}
-\caption{Baseline performance comparison. The key question is whether modern RL methods can close the gap between pure DQN (1\%) and hybrid approaches (88\%) on expert-level boards.}
-\label{tab:baselines}
+\caption{Evaluation metrics. Frame-level metrics (MSE, SSIM) measure overall visual quality. Semantic metrics measure whether the model captures the game state correctly regardless of visual quality.}
+\label{tab:metrics}
 \end{table}
 
-\section{Expected Contributions}
-
-This project will provide:
-\begin{enumerate}
-    \item Empirical comparison of modern RL algorithms (including recent advances like $\beta$-DQN) on a challenging sparse reward task
-    \item Analysis of when pure RL succeeds versus when domain knowledge is required
-    \item Practical guidance for practitioners facing sparse reward problems
-\end{enumerate}
+Evaluation uses 1,000 episodes at each checkpoint, reporting means with confidence intervals. Checkpoints are taken every 50,000 steps over a total training run of 1 million environment steps, giving 20 snapshots of the world model's evolution.
 
 \section{Timeline}
 
-\begin{tabular}{ll}
+\begin{tabular}{lp{4.2cm}}
 \toprule
 \textbf{Date} & \textbf{Milestone} \\
 \midrule
 Feb 17--19 & Proposal presentation \\
 Feb 19 & Proposal paper due \\
-Mar 1 & PPO, SAC, and $\beta$-DQN implementations \\
-Mar 15 & Reward shaping experiments complete \\
-Mar 31 & Curriculum learning experiments complete \\
-Apr 1 & Midterm presentation and paper \\
-Apr 15 & Full experimental results \\
+Mar 1 & Snake env, DreamerV3 training \\
+Mar 15 & Imagination extraction pipeline \\
+Mar 31 & Checkpoint analysis complete \\
+Apr 1 & Midterm presentation/paper \\
+Apr 15 & Correlation \& semantic metrics \\
 May 7 & Final presentation \\
 May 12 & Final paper due \\
 \bottomrule
@@ -171,21 +169,21 @@ May 12 & Final paper due \\
 
 \section{Expected Challenges}
 
-Several challenges may affect experimental outcomes:
+\textbf{Environment integration:} DreamerV3 expects Gymnasium-compatible environments with image observations. Building a Snake environment that renders clean, consistent frames at the right resolution will require careful implementation.
 
-\textbf{Partial Observability:} Minesweeper violates the Markov property since optimal actions depend on hidden mine locations. Standard RL algorithms assume full observability; this mismatch may fundamentally limit achievable performance regardless of algorithm sophistication.
+\textbf{Trajectory alignment:} Imagined trajectories may diverge from real ones after just a few steps, especially early in training when the world model is poor. The analysis must handle cases where the imagined game ends at a different time step than the real one.
 
-\textbf{Sample Efficiency:} The large state space ($>$12$^{256}$ configurations) requires extensive exploration. Policy gradient methods like PPO and SAC typically require millions of environment interactions, which may be computationally prohibitive for thorough hyperparameter search.
+\textbf{Semantic extraction:} Pulling game-state information (snake position, food location) from rendered frames requires either access to the underlying game state during real play or a reliable extraction method from pixels. The approach is to log the true game state alongside rendered frames to avoid this issue.
 
-\textbf{Credit Assignment:} Even with reward shaping, determining which early-game actions contributed to eventual success or failure remains difficult. A single unlucky first move can doom an otherwise perfect strategy.
-
-\textbf{Curriculum Transfer:} Skills learned on small boards (5$\times$5) may not transfer effectively to larger boards (16$\times$16) due to qualitatively different strategic requirements. The curriculum may need careful tuning to ensure positive transfer.
-
-\textbf{Evaluation Variance:} Due to the stochastic nature of mine placement, win rates exhibit high variance. Statistical significance testing will require large sample sizes (10,000+ episodes per configuration).
+\textbf{Computational cost:} DreamerV3 training is GPU-intensive. The available hardware is an RTX 5070 Ti with 16GB VRAM running PyTorch 2.7.0 with CUDA 12.8, which should be sufficient for a 64$\times$64 observation space.
 
 \section{Conclusion}
 
-This proposal outlines a systematic investigation into whether modern deep RL algorithms can overcome the sparse reward challenge in Minesweeper. By comparing PPO, SAC, $\beta$-DQN, reward shaping, and curriculum learning against a DQN baseline, this work will provide empirical evidence on the fundamental limitations of pure RL and the necessity of domain knowledge in challenging environments.
+DreamerV3 succeeds by learning to imagine its environment and training inside that imagination. But how accurate those imaginations are---and whether accuracy even matters for performance---remains an open question. By applying DreamerV3 to Snake, a game simple enough to make imagination errors precisely measurable, this work provides the first systematic analysis of world model fidelity in the Dreamer framework. The results will reveal what DreamerV3's world model actually learns, how its imagination evolves during training, and whether better dreams lead to better play.
+
+\section*{AI Usage Statement}
+
+Claude (Anthropic) was used to assist with formatting ideas into prose and structuring this document in AAAI conference format. All research questions, methods, and analysis decisions are the author's own.
 
 \bibliography{references}
 

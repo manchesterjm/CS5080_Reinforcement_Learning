@@ -82,31 +82,31 @@ class Maze:
         else:
             self.barriers = barriers
 
-        # Build state space (all non-barrier cells)
+        # Build state space: all grid cells that are not barriers
         self.states = self._build_state_space()
-        self.n_states = len(self.states)
-        self.n_actions = 4
+        self.n_states = len(self.states)  # 20 for default HW1 maze (25 - 5 barriers)
+        self.n_actions = 4  # UP, DOWN, LEFT, RIGHT
 
-        # State to index mapping for tabular methods
+        # Bidirectional mappings for tabular indexing
         self.state_to_idx = {s: i for i, s in enumerate(self.states)}
         self.idx_to_state = {i: s for i, s in enumerate(self.states)}
 
     def _build_state_space(self) -> List[Tuple[int, int]]:
         """Build list of valid states (non-barrier cells)."""
         states = []
-        for r in range(1, self.rows + 1):
-            for c in range(1, self.cols + 1):
+        for r in range(1, self.rows + 1):      # 1-indexed rows
+            for c in range(1, self.cols + 1):  # 1-indexed cols
                 if (r, c) not in self.barriers:
                     states.append((r, c))
-        return states
+        return states  # Ordered row-major for consistent iteration
 
     def is_valid_state(self, state: Tuple[int, int]) -> bool:
         """Check if a state is valid (within bounds and not a barrier)."""
         r, c = state
         if r < 1 or r > self.rows or c < 1 or c > self.cols:
-            return False
+            return False  # Off the grid edge
         if state in self.barriers:
-            return False
+            return False  # Inside a barrier cell
         return True
 
     def get_valid_actions(self, state: Tuple[int, int]) -> List[int]:
@@ -143,6 +143,7 @@ class Maze:
         next_state = self._get_next_state(state, action)
 
         # If next state is invalid (wall or barrier), stay in place
+        # Agent still receives step penalty — "bumping" a wall costs a step
         if not self.is_valid_state(next_state):
             next_state = state
 
@@ -150,11 +151,12 @@ class Maze:
         done = (next_state == self.goal)
 
         # Reward structure:
-        # +1 for reaching goal, -0.1 for each step (encourages efficiency)
+        # +1.0 for reaching goal, -0.01 per step (encourages shortest path)
+        # Step penalty is small enough not to overwhelm goal reward
         if done:
             reward = 1.0
         else:
-            reward = -0.01  # Small negative reward to encourage finding goal quickly
+            reward = -0.01
 
         return next_state, reward, done
 
@@ -179,38 +181,42 @@ class Maze:
             String representation of the maze
         """
         lines = []
+        cell_w = 7  # width of each cell's content
+        row_label_w = max(len(f"Row {r}") for r in range(1, self.rows + 1))
 
         # Header
-        header = "     " + "".join(f" Col {c} " for c in range(1, self.cols + 1))
+        header = " " * row_label_w + " " + "".join(
+            f" Col {c}".ljust(cell_w) + " " for c in range(1, self.cols + 1))
         lines.append(header)
-        lines.append("    +" + "-------+" * self.cols)
+        lines.append(" " * row_label_w + "+" + ("-" * cell_w + "+") * self.cols)
 
         for r in range(1, self.rows + 1):
-            row_str = f"Row {r}|"
+            label = f"Row {r}".rjust(row_label_w)
+            row_str = label + "|"
             for c in range(1, self.cols + 1):
                 pos = (r, c)
 
                 if pos in self.barriers:
-                    cell = "XXXXXXX"
+                    cell = "X" * cell_w
                 elif pos == current_state:
-                    cell = "   A   "
+                    cell = "A".center(cell_w)
                 elif pos == self.start and pos == self.goal:
-                    cell = " S/G  "
+                    cell = "S/G".center(cell_w)
                 elif pos == self.start:
-                    cell = " START "
+                    cell = "START".center(cell_w)
                 elif pos == self.goal:
-                    cell = " GOAL  "
+                    cell = "GOAL".center(cell_w)
                 elif policy is not None and pos in policy:
                     action = policy[pos]
                     symbol = self.ACTION_SYMBOLS[action]
-                    cell = f"   {symbol}   "
+                    cell = symbol.center(cell_w)
                 else:
-                    cell = "       "
+                    cell = " " * cell_w
 
                 row_str += cell + "|"
 
             lines.append(row_str)
-            lines.append("    +" + "-------+" * self.cols)
+            lines.append(" " * row_label_w + "+" + ("-" * cell_w + "+") * self.cols)
 
         return "\n".join(lines)
 
@@ -225,29 +231,33 @@ class Maze:
             String representation with values
         """
         lines = []
+        cell_w = 7
+        row_label_w = max(len(f"Row {r}") for r in range(1, self.rows + 1))
 
         # Header
-        header = "     " + "".join(f" Col {c} " for c in range(1, self.cols + 1))
+        header = " " * row_label_w + " " + "".join(
+            f" Col {c}".ljust(cell_w) + " " for c in range(1, self.cols + 1))
         lines.append(header)
-        lines.append("    +" + "-------+" * self.cols)
+        lines.append(" " * row_label_w + "+" + ("-" * cell_w + "+") * self.cols)
 
         for r in range(1, self.rows + 1):
-            row_str = f"Row {r}|"
+            label = f"Row {r}".rjust(row_label_w)
+            row_str = label + "|"
             for c in range(1, self.cols + 1):
                 pos = (r, c)
 
                 if pos in self.barriers:
-                    cell = "XXXXXXX"
+                    cell = "X" * cell_w
                 elif pos in V:
                     val = V[pos]
                     cell = f"{val:7.2f}"
                 else:
-                    cell = "   ?   "
+                    cell = "?".center(cell_w)
 
                 row_str += cell + "|"
 
             lines.append(row_str)
-            lines.append("    +" + "-------+" * self.cols)
+            lines.append(" " * row_label_w + "+" + ("-" * cell_w + "+") * self.cols)
 
         return "\n".join(lines)
 

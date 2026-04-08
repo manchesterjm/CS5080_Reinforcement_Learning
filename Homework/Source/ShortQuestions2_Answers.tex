@@ -1,0 +1,89 @@
+\documentclass[letterpaper]{article}
+\usepackage{aaai24}
+\usepackage{times}
+\usepackage{helvet}
+\usepackage{courier}
+\usepackage[hyphens]{url}
+\usepackage{booktabs}
+\usepackage{natbib}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+\title{Short Questions 2}
+\author{
+    Josh Manchester\\
+    Department of Computer Science\\
+    University of Colorado Colorado Springs\\
+    Colorado Springs, CO 80918\\
+    \texttt{jmanches@uccs.edu}
+}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This paper addresses three foundational concepts in reinforcement learning: the Markov property, value functions, and policy evaluation. The Markov property enables tractable sequential decision-making by ensuring that future states depend only on the present. Value functions $V(s)$ and $Q(s,a)$ quantify expected cumulative rewards for states and state-action pairs, forming the basis for policy optimization. Iterative policy evaluation provides a straightforward algorithm for computing these values through repeated application of the Bellman equation.
+\end{abstract}
+
+\section*{Question 1}
+\textit{What does the Markov property of a Markov Process mean?}
+
+\vspace{0.5em}
+
+The Markov property states that the future is independent of the past given the present. The probability of transitioning to the next state depends \textit{only} on the current state, not on the sequence of states that preceded it. Mathematically:
+\[
+P(S_{t+1} \mid S_t, S_{t-1}, \ldots, S_0) = P(S_{t+1} \mid S_t)
+\]
+This ``memoryless'' property means the current state contains all information needed to predict future states---the history provides no additional predictive value \citep{sutton2018reinforcement}. As Sutton and Barto note, a state signal that succeeds in retaining all relevant information is said to be \textit{Markov}, or to have the Markov property.
+
+\section*{Question 2}
+\textit{What are $V(s)$ and $Q(s, a)$ values in the context of a Markov Decision Process?}
+
+\vspace{0.5em}
+
+$V(s)$ is the \textbf{state-value function}: the expected cumulative discounted reward when starting in state $s$ and following policy $\pi$ thereafter \citep{sutton2018reinforcement}:
+\[
+V^\pi(s) = \mathbb{E}_\pi\left[\sum_{t=0}^{\infty} \gamma^t R_t \mid S_0 = s\right]
+\]
+
+$Q(s, a)$ is the \textbf{action-value function}: the expected cumulative discounted reward when starting in state $s$, taking action $a$, and then following policy $\pi$:
+\[
+Q^\pi(s, a) = \mathbb{E}_\pi\left[\sum_{t=0}^{\infty} \gamma^t R_t \mid S_0 = s, A_0 = a\right]
+\]
+
+The relationship between them is: $V^\pi(s) = \sum_a \pi(a \mid s) \, Q^\pi(s, a)$.
+
+\section*{Question 3}
+\textit{Briefly describe a na\"ive algorithm for computing $V(s)$ $\forall s \in S$ in a Markov Decision Process.}
+
+\vspace{0.5em}
+
+\textbf{First-Visit Monte Carlo} estimates $V(s)$ by averaging the returns observed after visiting each state across many episodes \citep{sutton2018reinforcement}:
+
+\begin{algorithmic}[1]
+\State Initialize $V(s) = 0$ and $\text{visits}(s) = 0$ for all $s \in S$
+\For{$i = 1$ to num\_episodes}
+    \State Generate episode using policy $\pi$: $S_0, A_0, R_1, S_1, A_1, R_2, \ldots, S_T$
+    \For{each state $S_t$ in the episode (first visit only)}
+        \State $G_t \gets R_{t+1} + \gamma R_{t+2} + \gamma^2 R_{t+3} + \ldots + \gamma^{T-t-1} R_T$
+        \State $V(S_t) \gets \frac{\text{visits}(S_t) \times V(S_t) + G_t}{\text{visits}(S_t) + 1}$
+        \State $\text{visits}(S_t) \gets \text{visits}(S_t) + 1$
+    \EndFor
+\EndFor
+\State \Return $V$
+\end{algorithmic}
+
+\vspace{0.5em}
+
+This algorithm is considered ``na\"ive'' because it can be very slow---in large environments, many episodes are needed to visit all states sufficiently. It may also fail to converge if exploration is inadequate, as some states may never be visited under a deterministic policy. More efficient methods include Temporal Difference learning (which updates after each step rather than waiting for episode completion) and function approximation (which generalizes to unvisited states).
+
+\section*{AI Use Statement}
+
+Claude (Anthropic) was used to format my answers in AAAI LaTeX format.
+
+\bibliography{references}
+
+\end{document}

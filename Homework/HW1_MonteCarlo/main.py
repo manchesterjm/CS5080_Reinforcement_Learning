@@ -6,6 +6,14 @@ Runs experiments for all homework questions:
 2. Parameter sensitivity analysis
 3. Policy consistency across runs
 4. Random mazes of different sizes
+
+Usage:
+    python main.py              # Run with matplotlib plots
+    python main.py --no-plots   # Run text-only (no matplotlib needed)
+
+Setup on any machine:
+    pip install -r requirements.txt
+    python main.py
 """
 
 import numpy as np
@@ -15,13 +23,24 @@ from typing import Dict, List, Tuple
 from maze import Maze, create_hw1_maze
 from monte_carlo import MonteCarloAgent
 from maze_generator import generate_random_maze
-from visualize import plot_maze, plot_learning_curves, plot_value_heatmap
+
+# Defer matplotlib import -- only needed when show_plots=True
+plot_maze = None
+plot_learning_curves = None
+plot_value_heatmap = None
+
+
+def _load_visualize():
+    """Load visualization functions on demand (requires matplotlib)."""
+    global plot_maze, plot_learning_curves, plot_value_heatmap
+    from visualize import plot_maze, plot_learning_curves, plot_value_heatmap
 
 
 def run_single_experiment(maze: Maze,
                           gamma: float = 0.99,
                           n_episodes: int = 5000,
                           seed: int = None,
+                          first_visit: bool = True,
                           verbose: bool = False) -> Tuple[MonteCarloAgent, Dict]:
     """
     Run a single Monte Carlo ES experiment.
@@ -31,6 +50,7 @@ def run_single_experiment(maze: Maze,
         gamma: Discount factor
         n_episodes: Number of training episodes
         seed: Random seed for reproducibility
+        first_visit: Use first-visit MC (True) or every-visit MC (False)
         verbose: Print training progress
 
     Returns:
@@ -41,7 +61,7 @@ def run_single_experiment(maze: Maze,
         np.random.seed(seed)
 
     agent = MonteCarloAgent(maze, gamma=gamma)
-    agent.train(n_episodes=n_episodes, verbose=verbose,
+    agent.train(n_episodes=n_episodes, first_visit=first_visit, verbose=verbose,
                 print_interval=n_episodes // 5 if verbose else n_episodes)
 
     # Evaluate final policy
@@ -88,14 +108,10 @@ def experiment_hw1_maze(show_plots: bool = True) -> None:
     print(f"Avg Return: {results['avg_return']:.4f}")
 
     if show_plots:
-        # Plot maze with policy
+        _load_visualize()
         plot_maze(maze, policy=agent.policy, title="Learned Policy (HW1 Maze)")
-
-        # Plot learning curves
         plot_learning_curves(agent.episode_lengths, agent.episode_returns,
                             window=100, title="Monte Carlo ES Learning")
-
-        # Plot value heatmap
         V = agent.get_state_values()
         plot_value_heatmap(maze, V, title="State Values V(s)")
 
@@ -207,17 +223,43 @@ def experiment_random_mazes(show_plots: bool = True) -> None:
         print(f"  Avg Steps: {results['avg_steps']:.1f}")
 
         if show_plots:
+            _load_visualize()
             plot_maze(maze, policy=agent.policy,
                      title=f"Learned Policy ({rows}x{cols} Random Maze)")
 
 
-def main():
-    """Run all experiments."""
-    print("Monte Carlo RL Experiments - HW1")
+def experiment_first_vs_every_visit(show_plots: bool = True) -> None:
+    """
+    Extra Credit: Compare first-visit MC vs every-visit MC.
+    """
+    print("\n" + "=" * 60)
+    print("EXPERIMENT 5: First-Visit vs Every-Visit MC")
     print("=" * 60)
 
-    # Run experiments (set show_plots=False for non-interactive runs)
-    show_plots = True
+    maze = create_hw1_maze()
+
+    for label, fv in [("First-Visit", True), ("Every-Visit", False)]:
+        print(f"\n--- {label} MC-ES ---")
+        agent, results = run_single_experiment(maze, gamma=0.99, n_episodes=5000,
+                                               seed=42, first_visit=fv, verbose=True)
+        agent.print_policy()
+        print(f"\nSuccess Rate: {results['success_rate']*100:.0f}%, "
+              f"Avg Steps: {results['avg_steps']:.1f}, "
+              f"Avg Return: {results['avg_return']:.4f}")
+
+
+def main():
+    """Run all experiments."""
+    import sys
+
+    show_plots = "--no-plots" not in sys.argv
+
+    if not show_plots:
+        print("(Running without plots -- text output only)")
+        print()
+
+    print("Monte Carlo RL Experiments - HW1")
+    print("=" * 60)
 
     # Core HW1 maze experiments
     experiment_hw1_maze(show_plots=show_plots)
@@ -230,6 +272,9 @@ def main():
 
     # Random mazes of different sizes
     experiment_random_mazes(show_plots=show_plots)
+
+    # Extra credit: first-visit vs every-visit comparison
+    experiment_first_vs_every_visit(show_plots=show_plots)
 
     print("\n" + "=" * 60)
     print("All experiments complete!")

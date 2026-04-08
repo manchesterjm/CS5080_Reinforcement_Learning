@@ -1,0 +1,54 @@
+\documentclass[letterpaper]{article}
+\usepackage{aaai24}
+\usepackage{times}
+\usepackage{helvet}
+\usepackage{courier}
+\usepackage[hyphens]{url}
+\usepackage{booktabs}
+\usepackage{natbib}
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+\title{Short Questions 5}
+\author{
+    Josh Manchester\\
+    Department of Computer Science\\
+    University of Colorado Colorado Springs\\
+    Colorado Springs, CO 80918\\
+    \texttt{jmanches@uccs.edu}
+}
+
+\begin{document}
+
+\maketitle
+
+\section*{Question 1}
+\textit{Pick 4 of your classmates' proposal presentations (preferably in different domains) and write a paragraph summarizing each picked proposed project. Focus on the use of reinforcement learning.}
+
+\vspace{0.5em}
+
+\textbf{Abin Acharya --- Reinforcement Learning for Intelligent Tutoring Systems.}
+Acharya frames adaptive tutoring as a Markov Decision Process where the agent selects math problems and hint levels for a student. The state captures the student's current mastery across multiple skills plus an engagement signal. The action space is the choice of which problem to present and what hint level to offer. The reward function combines a correctness bonus, a mastery improvement term, and penalties for over-hinting and student boredom, pushing the agent to optimize long-term learning rather than short-term accuracy. Acharya plans to compare three online RL algorithms---vanilla DQN, Double DQN with a dueling architecture, and PPO with generalized advantage estimation---training each in a simulated student environment. An offline extension uses a Decision Transformer conditioned on return-to-go, trained on real student interaction trajectories from the ASSISTments dataset. This offline approach is interesting because the agent learns a policy from static data without interacting with the environment, making it applicable where live student experimentation is impractical. A challenge will be the sim-to-real gap: if the simulated student environment does not capture how real students behave, the learned policy may need significant adaptation before it works on actual learners.
+
+\vspace{0.5em}
+
+\textbf{Kaleb Chanza --- Multi-Agent Deep RL for Adaptive Traffic Signal Control.}
+Chanza uses a multi-agent deep RL architecture for traffic signal control, where each traffic light at an intersection is its own independent agent. The agents share information with neighboring intersections through a communication mechanism, allowing them to coordinate signal timing across the network rather than optimizing each light in isolation. The state space for each agent includes traffic observations like queue lengths and vehicle speeds at its intersection, and the action is the signal phase and timing decision. Chanza specifically plans to augment the state with real-time vehicle speed data, which recent ATSC papers have shown helps agents anticipate approaching traffic rather than reacting only to current queue conditions. The agents are trained in the SUMO traffic simulator, which provides a realistic environment for multi-intersection scenarios. One of the core RL challenges Chanza identifies is the high-dimensional joint state-action space that grows with the number of intersections, which is why deep function approximation and the multi-agent decomposition are necessary rather than tabular methods. Multi-agent credit assignment will likely be the biggest challenge---when overall traffic improves or worsens, each agent must figure out which of its timing decisions actually contributed to the shared outcome.
+
+\vspace{0.5em}
+
+\textbf{Amanul Islam --- RL for Fast and Secure Circuit Selection in Tor.}
+Islam formulates Tor circuit selection as an RL problem where the agent must balance two competing objectives in its reward function: minimizing latency and preserving anonymity. The state represents current network conditions including relay latency measurements, relay reliability scores, and an anonymity level metric. The action is selecting one circuit from a set of candidate relay paths (each consisting of an entry, middle, and exit relay). The reward is designed to be higher for lower-latency circuits but includes a penalty term when the selected circuit reduces anonymity below acceptable thresholds. This reward design is the central RL contribution---prior work by Zhang et al.\ applied RL to Tor but used a reward that prioritized performance alone, and they found the learned policy compromised user anonymity. Islam's approach explicitly encodes the anonymity constraint into the reward signal so the agent's learned policy respects both objectives. The goal is for the policy to outperform Tor's current random relay selection on latency while maintaining comparable anonymity guarantees. A challenge is that Tor's network is highly non-stationary---relays go up and down and traffic patterns shift constantly---so keeping the learned policy effective will likely require continual retraining.
+
+\vspace{0.5em}
+
+\textbf{Hemant Khatiwada --- Hybrid Online-Offline RL for Carbon-Aware Data Centers.}
+Khatiwada proposes a two-phase RL approach for scheduling data center workloads around renewable energy availability. The MDP state consists of server utilization, queued workloads, and forecasted grid carbon intensity. The action is the fraction of data center capacity to allocate now versus defer to a later low-carbon window. The reward is multi-objective: it minimizes the product of carbon emissions and energy consumed, minus a severe penalty for SLA violations that ensures the agent does not delay time-sensitive tasks. The RL methodology is what makes this project distinctive. Pure online RL is not viable because trial-and-error learning in a production data center means dropping real user tasks. Khatiwada instead pre-trains a safe baseline policy entirely offline from historical operational logs using an algorithm similar to Conservative Q-Learning (CQL), which learns pessimistic value estimates to avoid out-of-distribution actions. The agent then fine-tunes online in a SustainGym simulator with a KL-divergence constraint that mathematically bounds how far the updated policy can deviate from the offline baseline. This offline-to-online transfer addresses the distribution shift problem---the offline policy was trained on past weather and grid patterns that may not match future conditions, so online adaptation is needed, but in a controlled way. Tuning the KL-divergence constraint will be a challenge: too tight and the agent cannot improve beyond the conservative offline baseline, too loose and it risks unsafe actions in production.
+
+\section*{AI Use Statement}
+
+Claude (Anthropic) was used to format my paragraphs in AAAI LaTeX format.
+
+\bibliography{references}
+
+\end{document}

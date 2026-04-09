@@ -33,7 +33,7 @@
 
 **Given a policy π:** Evaluate each state by computing V_π(x)
 
-$$V_\pi(x) = \mathbb{E}[G_t | S_t = x] \quad \text{for all } x \in S$$
+    V_pi(x) = E[G_t | S_t = x]   for all x in S
 
 **To compute V_π(x):** Agent performs n episodes following π
 
@@ -52,7 +52,7 @@ Where:
 - Rᵢ = reward received after taking action Aᵢ₋₁
 
 **Value at state Sᵢ in episode e:**
-$$V_{\pi,e_i}(S_i) = G_{t,e_i}$$
+    V_{pi,e_i}(S_i) = G_{t,e_i}
 
 ---
 
@@ -62,7 +62,7 @@ $$V_{\pi,e_i}(S_i) = G_{t,e_i}$$
 
 The **return** at time t in episode e:
 
-$$G_{t,e_i} = R_{t+1,e_i} + \gamma R_{t+2,e_i} + \gamma^2 R_{t+3,e_i} + ...$$
+    G_{t,e_i} = R_{t+1,e_i} + gamma * R_{t+2,e_i} + gamma^2 * R_{t+3,e_i} + ...
 
 where e = episode index, γ = discount factor
 
@@ -70,7 +70,7 @@ where e = episode index, γ = discount factor
 
 **Key insight:** G_t can be computed recursively (working backwards):
 
-$$G_t = R_{t+1} + \gamma G_{t+1}$$
+    G_t = R_{t+1} + gamma * G_{t+1}
 
 **Computing G backwards through an episode:**
 
@@ -180,7 +180,7 @@ Episode N:    Compute V_π(Sᵢ) and use it to compute avg for V(sᵢ)
 **MDPs have no history/memory** - future depends only on current state, not how we got there.
 
 **MDP History (trajectory):**
-$$S_1, A_1, R_1, S_2, A_2, R_2, ..., S_t$$
+    S_1, A_1, R_1, S_2, A_2, R_2, ..., S_t
 
 This is just a **string** of state-action-reward tuples.
 
@@ -229,7 +229,7 @@ Could use:
 
 ### Definition
 
-$$Q_{\pi}(s, a) = \mathbb{E}_\pi[G_t | S_t = s, A_t = a]$$
+    Q_pi(s, a) = E_pi[G_t | S_t = s, A_t = a]
 
 The expected return starting from state s, taking action a, then following policy π.
 
@@ -245,7 +245,7 @@ The expected return starting from state s, taking action a, then following polic
 
 ### Q-value Interpretation
 
-$$Q_{e_i}(S_t, A_t) = \text{Return obtained by performing action } A_t \text{ in } S_t$$
+    Q_{e_i}(S_t, A_t) = Return obtained by performing action A_t in S_t
 
 This may **not be in policy π**, but then follow π to the end.
 
@@ -262,14 +262,14 @@ This may **not be in policy π**, but then follow π to the end.
 
 In the general case, the dynamics of an MDP are given as (according to Sutton & Barto):
 
-$$p(x', r | x, a) = \text{Probability}(S_{t+1} = x', R_{t+1} = r | S_t = x, A_t = a)$$
+    p(x', r | x, a) = Probability(S_{t+1} = x', R_{t+1} = r | S_t = x, A_t = a)
 
 Alternate notation: p(x', r, x, a)
 
 ### Probability Constraint
 
 We must have:
-$$\sum_{s' \in S} \sum_{r \in \mathcal{R}} p(s', r | s, a) = 1$$
+    sum_{s' in S} sum_{r in R} p(s', r | s, a) = 1
 
 for all s ∈ S, a ∈ A(s)
 
@@ -284,16 +284,16 @@ for all s ∈ S, a ∈ A(s)
 The Bellman equation is **needed for fundamentals of learning**.
 
 Starting from the definition:
-$$V_\pi(x) = \mathbb{E}_\pi[G_t | S_t = x]$$
+    V_pi(x) = E_pi[G_t | S_t = x]
 
 Using the recursive return formula (Eq. 3.9):
-$$= \mathbb{E}_\pi[R_{t+1} + \gamma G_{t+1} | S_t = x]$$
+    = E_pi[R_{t+1} + gamma * G_{t+1} | S_t = x]
 
 **"Goes here"** - this is where the key derivation happens:
 
 Expanding the expectation over actions, next states, and rewards:
 
-$$V_\pi(s) = \sum_a \pi(a|s) \sum_{s'} \sum_r p(s', r | s, a) \left[ r + \gamma V_\pi(s') \right]$$
+    V_pi(s) = sum_a pi(a|s) sum_{s'} sum_r p(s', r | s, a) [r + gamma * V_pi(s')]
 
 > **📚 Textbook Reference (S&B Eq. 3.14):** This is the Bellman equation for v_π. It expresses the value of a state as the expected immediate reward plus the discounted value of successor states.
 
@@ -331,10 +331,10 @@ The Bellman equation averages over:
 
 The Bellman equation for action values:
 
-$$Q_\pi(s, a) = \mathbb{E}_\pi[R_{t+1} + \gamma Q_\pi(S_{t+1}, A_{t+1}) | S_t = s, A_t = a]$$
+    Q_pi(s, a) = E_pi[R_{t+1} + gamma * Q_pi(S_{t+1}, A_{t+1}) | S_t = s, A_t = a]
 
 Expanding:
-$$Q_\pi(s, a) = \sum_{s'} \sum_r p(s', r | s, a) \left[ r + \gamma \sum_{a'} \pi(a'|s') Q_\pi(s', a') \right]$$
+    Q_pi(s, a) = sum_{s'} sum_r p(s', r | s, a) [r + gamma * sum_{a'} pi(a'|s') Q_pi(s', a')]
 
 ### Backup Diagram for Q_π
 
@@ -355,7 +355,7 @@ $$Q_\pi(s, a) = \sum_{s'} \sum_r p(s', r | s, a) \left[ r + \gamma \sum_{a'} \pi
 
 ### Optimal State-Value Function
 
-$$V_*(s) = \max_\pi V_\pi(s) \quad \text{for all } s \in S$$
+    V*(s) = max_pi V_pi(s)   for all s in S
 
 The maximum value achievable from state s under any policy.
 
@@ -363,13 +363,13 @@ The maximum value achievable from state s under any policy.
 
 ### Optimal Action-Value Function
 
-$$Q_*(s, a) = \max_\pi Q_\pi(s, a) \quad \text{for all } s \in S, a \in A(s)$$
+    Q*(s, a) = max_pi Q_pi(s, a)   for all s in S, a in A(s)
 
 > **📚 Textbook Reference (S&B Eq. 3.16):** The optimal action-value function q* gives the expected return for taking action a in state s and thereafter following an optimal policy.
 
 ### Relationship Between V* and Q*
 
-$$Q_*(s, a) = \mathbb{E}[R_{t+1} + \gamma V_*(S_{t+1}) | S_t = s, A_t = a]$$
+    Q*(s, a) = E[R_{t+1} + gamma * V*(S_{t+1}) | S_t = s, A_t = a]
 
 ---
 
@@ -377,19 +377,19 @@ $$Q_*(s, a) = \mathbb{E}[R_{t+1} + \gamma V_*(S_{t+1}) | S_t = s, A_t = a]$$
 
 ### For V*
 
-$$V_*(s) = \max_{a \in A(s)} Q_{\pi_*}(s, a)$$
+    V*(s) = max_{a in A(s)} Q_{pi*}(s, a)
 
-$$= \max_a \mathbb{E}[R_{t+1} + \gamma V_*(S_{t+1}) | S_t = s, A_t = a]$$
+    = max_a E[R_{t+1} + gamma * V*(S_{t+1}) | S_t = s, A_t = a]
 
-$$= \max_a \sum_{s', r} p(s', r | s, a) \left[ r + \gamma V_*(s') \right]$$
+    = max_a sum_{s', r} p(s', r | s, a) [r + gamma * V*(s')]
 
 > **📚 Textbook Reference (S&B Eq. 3.19):** The Bellman optimality equation for v*. It states that the value of a state under an optimal policy must equal the expected return for the best action from that state.
 
 ### For Q*
 
-$$Q_*(s, a) = \mathbb{E}\left[ R_{t+1} + \gamma \max_{a'} Q_*(S_{t+1}, a') \Big| S_t = s, A_t = a \right]$$
+    Q*(s, a) = E[R_{t+1} + gamma * max_{a'} Q*(S_{t+1}, a') | S_t = s, A_t = a]
 
-$$= \sum_{s', r} p(s', r | s, a) \left[ r + \gamma \max_{a'} Q_*(s', a') \right]$$
+    = sum_{s', r} p(s', r | s, a) [r + gamma * max_{a'} Q*(s', a')]
 
 > **📚 Textbook Reference (S&B Eq. 3.20):** The Bellman optimality equation for q*.
 
@@ -437,12 +437,12 @@ For finite MDPs, the Bellman optimality equation has a **unique solution** for V
 ### Finding Optimal Policy from V* or Q*
 
 **From V*:** For each state s, choose action that maximizes:
-$$\arg\max_a \sum_{s', r} p(s', r | s, a) [r + \gamma V_*(s')]$$
+    argmax_a sum_{s', r} p(s', r | s, a) [r + gamma * V*(s')]
 
 Requires one-step lookahead and knowing dynamics.
 
 **From Q*:** For each state s, simply choose:
-$$\arg\max_a Q_*(s, a)$$
+    argmax_a Q*(s, a)
 
 No lookahead needed! Q* caches all the lookahead information.
 

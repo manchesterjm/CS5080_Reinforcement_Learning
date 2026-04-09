@@ -142,7 +142,7 @@ Best Policy (arrows show best action per state):
 
 A **policy** π is a mapping from states to probabilities of selecting each action.
 
-$$\pi(a|s) = P(A_t = a | S_t = s) \quad \forall s \in S$$
+    pi(a|s) = P(A_t = a | S_t = s)   for all s in S
 
 ### Initial Policy (π₀)
 
@@ -232,7 +232,7 @@ The **return** G_t is the total accumulated reward from time step t onward.
 
 ### Simple (Undiscounted) Return
 
-$$G_t = R_{t+1} + R_{t+2} + ... + R_T$$
+    G_t = R_{t+1} + R_{t+2} + ... + R_T
 
 Sum of all immediate rewards from t+1 to terminal time T.
 
@@ -242,7 +242,7 @@ Sum of all immediate rewards from t+1 to terminal time T.
 
 Could use this - a **discount factor** γ (gamma):
 
-$$G_t = R_{t+1} + \gamma R_{t+2} + \gamma^2 R_{t+3} + ... + \gamma^{T-t-1} R_T$$
+    G_t = R_{t+1} + gamma * R_{t+2} + gamma^2 * R_{t+3} + ... + gamma^{T-t-1} * R_T
 
 Where: **1 ≥ γ ≥ 0**
 
@@ -257,14 +257,14 @@ Where: **1 ≥ γ ≥ 0**
 **Assume γ = 0.9**
 
 **Episode 1:** X₁ →⁰ X₂ →¹⁰⁰ Goal (2 steps)
-$$G_1 = 0 + \gamma \times 100 = 0 + 0.9 \times 100 = 90$$
+    G_1 = 0 + gamma x 100 = 0 + 0.9 x 100 = 90
 
 **Episode 2:** X₁ →⁰ X₂ →⁰ X₃ →⁰ X₄ →⁰ X₅ →¹⁰⁰ Goal (5 steps)
-$$G_2 = 0 + \gamma \times 0 + \gamma^2 \times 0 + \gamma^3 \times 0 + \gamma^4 \times 100$$
-$$G_2 = 0.9^4 \times 100 = 0.6561 \times 100 = 65.61$$
+    G_2 = 0 + gamma x 0 + gamma^2 x 0 + gamma^3 x 0 + gamma^4 x 100
+    G_2 = 0.9^4 x 100 = 0.6561 x 100 = 65.61
 
 **Episode 3:** Very long path
-$$G_3 = 0.00...2656 \text{ (very small)}$$
+    G_3 = 0.00...2656 (very small)
 
 > **📚 Textbook Reference (S&B 3.3):** The discount factor γ determines the present value of future rewards. A reward received k steps in the future is worth only γᵏ⁻¹ times what it would be worth if received immediately.
 
@@ -289,13 +289,13 @@ $$G_3 = 0.00...2656 \text{ (very small)}$$
 
 For a single episode i, the value of state X₁ is simply the return from that episode:
 
-$$V_{episode_i}(X_1) = G_1 \text{ in episode } i$$
+    V_{episode_i}(X_1) = G_1 in episode i
 
 ### General State Value
 
 In general, the value of being in state S_t is the return G_t observed in some episode:
 
-$$V(S_t) = G_t \text{ in some episode}$$
+    V(S_t) = G_t in some episode
 
 But returns vary across episodes! We need an **expected** value.
 
@@ -303,10 +303,10 @@ But returns vary across episodes! We need an **expected** value.
 
 **Definition:** The value of state s under policy π is the **expected return** when starting from s and following π:
 
-$$V_\pi(x) = \mathbb{E}_\pi[G_t | S_t = x] \quad x \in S$$
+    V_pi(x) = E_pi[G_t | S_t = x]   x in S
 
 **Estimated as:**
-$$V_\pi(x) \approx \frac{1}{\text{\#episodes}} \left[ R_{t+1} + \gamma R_{t+2} + ... \right]$$
+    V_pi(x) ≈ (1/#episodes) * [R_{t+1} + gamma * R_{t+2} + ...]
 
 > **📚 Textbook Reference (S&B 3.5):** The state-value function v_π(s) for an MDP is defined as the expected return starting from state s and thereafter following policy π. This is a fundamental concept in RL.
 
@@ -337,7 +337,7 @@ For i = 1 to num_episodes:
 ### Incremental Mean Update
 
 The update formula maintains a running average:
-$$V(S_t) \leftarrow \frac{n \cdot V(S_t) + G_{t,i}}{n + 1}$$
+    V(S_t) <-- (n * V(S_t) + G_{t,i}) / (n + 1)
 
 Where n = no_visits[S_t]
 

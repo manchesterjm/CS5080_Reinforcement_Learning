@@ -37,7 +37,7 @@ Computing G_t or Return values is necessary for learning V(s) or Q(s, a) values.
 
 ## The Importance Sampling Ratio
 
-$$G_{t,\pi} = \rho_t \cdot G_{t,B}$$
+    G_{t,pi} = rho_t * G_{t,B}
 
 This ρ is the **scaling/weighted factor** — the **importance sampling ratio**.
 
@@ -57,9 +57,9 @@ We take original values in one distribution and multiply by a weighted factor to
 
 ### Formal Definition
 
-$$V_\pi(s) = \mathbb{E}\left[G_{t,\pi} \mid S_{t,\pi} = s\right]$$
+    V_pi(s) = E[G_{t,pi} | S_{t,pi} = s]
 
-$$= \mathbb{E}\left[\rho_t \cdot G_{t,B} \mid S_t = s\right]$$
+    = E[rho_t * G_{t,B} | S_t = s]
 
 (where S_{t,π} = S_{t,B} = s, or just S_t = s)
 
@@ -67,19 +67,22 @@ $$= \mathbb{E}\left[\rho_t \cdot G_{t,B} \mid S_t = s\right]$$
 
 **What is the value of ρ?** The weight or the importance sampling factor for transfer from G_t values from B policy to target policy.
 
-$$\rho_t = \frac{\text{Probability of states and actions in target policy } \pi \text{ in the imaginary ep. from time } t \text{ to end time } T}{\text{Probability of states and actions in behavior policy } B \text{ in the real ep. from } t \text{ to } T}$$
+    rho_t = Probability of states and actions in target policy pi in the imaginary ep. from time t to end time T
+            / Probability of states and actions in behavior policy B in the real ep. from t to T
 
 ### Expanding the Ratio
 
-$$\rho_t = \frac{\text{Prob}(a_{t,\pi} \mid S_{t,\pi}) \cdot \text{Prob}(a_{t+1,\pi} \mid S_{t+1,\pi}) \cdot \ldots}{\text{Prob}(a_{t,B} \mid S_{t,B}) \cdot \text{Prob}(a_{t+1,B} \mid S_{t+1,B}) \cdot \ldots}$$
+    rho_t = Prob(a_{t,pi} | S_{t,pi}) * Prob(a_{t+1,pi} | S_{t+1,pi}) * ...
+            / Prob(a_{t,B} | S_{t,B}) * Prob(a_{t+1,B} | S_{t+1,B}) * ...
 
-$$= \frac{\pi(a_t \mid S_t) \cdot \pi(a_{t+1} \mid S_{t+1}) \cdot \pi(\ldots) \cdot \ldots \cdot \pi(a_{T-1} \mid S_{T-1})}{B(a_t \mid S_t) \cdot B(a_{t+1} \mid S_{t+1}) \cdot B(\ldots) \cdot \ldots \cdot B(a_{T-1} \mid S_{T-1})}$$
+    = pi(a_t | S_t) * pi(a_{t+1} | S_{t+1}) * ... * pi(a_{T-1} | S_{T-1})
+      / B(a_t | S_t) * B(a_{t+1} | S_{t+1}) * ... * B(a_{T-1} | S_{T-1})
 
 ### Product Form
 
-$$\rho_{t:T-1} = \prod_{k=t}^{T-1} \frac{\pi(A_k \mid S_k)}{B(A_k \mid S_k)}$$
+    rho_{t:T-1} = product_{k=t}^{T-1} pi(A_k | S_k) / B(A_k | S_k)
 
-$$G_{t,\pi} = \rho_t \cdot G_{t,B} \quad \text{(importance sampling ratio)}$$
+    G_{t,pi} = rho_t * G_{t,B}   (importance sampling ratio)
 
 **We now have a formula to transfer G_{t,B} to G_{t,π}, or transfer values from B to π.**
 
@@ -89,7 +92,7 @@ $$G_{t,\pi} = \rho_t \cdot G_{t,B} \quad \text{(importance sampling ratio)}$$
 
 **Next question:** To actually transfer/compute V_π(s), i.e., values of states in target policy (or Q_π(s, a), i.e., values of state-action pairs in target policy):
 
-$$V_\pi(s) = \mathbb{E}\left[\rho_t \cdot G_{t,B} \mid S_t = s\right]$$
+    V_pi(s) = E[rho_t * G_{t,B} | S_t = s]
 
 (ρ_t is the transfer/importance ratio or weight)
 
@@ -105,17 +108,17 @@ Professor draws the standard 2x3 maze.
 
 Then |τ(s)| = number of times state s occurs in the episodes of training using behavior policy B.
 
-$$V_\pi(s) = \frac{\displaystyle\sum_{t \in \tau(s)} \rho_t \, G_{t,B}}{|\tau(s)|}$$
+    V_pi(s) = sum_{t in tau(s)} rho_t * G_{t,B} / |tau(s)|
 
 **Example:** Suppose we want to compute V_π(s₂):
 
-$$V_\pi(s_2) = \left[G_t \mid S_t = s_2\right] \cdot \rho$$
+    V_pi(s_2) = [G_t | S_t = s_2] * rho
 
 (Scaled by importance ratio)
 
 ### Weighted Sampling
 
-$$V_\pi(s) = \frac{\displaystyle\sum_{t \in \tau(s)} \rho_t \, G_{t,B}}{\displaystyle\sum_{t \in \tau(s)} \rho_t}$$
+    V_pi(s) = sum_{t in tau(s)} rho_t * G_{t,B} / sum_{t in tau(s)} rho_t
 
 ---
 

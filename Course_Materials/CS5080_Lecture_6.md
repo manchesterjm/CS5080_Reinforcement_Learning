@@ -12,7 +12,7 @@
 
 Every detail of the dynamics of an MDP is captured by:
 
-$$p(s', r | s, a)$$
+    p(s', r | s, a)
 
 This is a **4-argument function** describing:
 
@@ -64,11 +64,11 @@ From state s:
 
 ### Return Calculation
 
-$$G_t = \text{return}$$
+    G_t = return
 
-$$= R_{t+1} + \gamma R_{t+2} + \gamma^2 R_{t+3} + ...$$
+    = R_{t+1} + gamma * R_{t+2} + gamma^2 * R_{t+3} + ...
 
-$$= R_{t+1} + \gamma G_{t+1}$$
+    = R_{t+1} + gamma * G_{t+1}
 
 ---
 
@@ -109,7 +109,7 @@ Given V(s) values, we can obtain which actions to perform.
 
 **For state S, perform action:**
 
-$$a = \arg\max_{x'} \left[ r + V(x') \right] \quad \text{where } x' = \delta(s, a)$$
+    a = argmax_{x'} [r + V(x')]   where x' = delta(s, a)
 
 ### Why Q(s,a) is Often Preferred
 
@@ -139,7 +139,7 @@ Reason: Q-values directly tell us which action to take without needing the trans
 
 > **📚 From Sutton & Barto (p. 97):**
 
-$$\pi_0 \xrightarrow{E} Q_{\pi_0} \xrightarrow{I} \pi_1 \xrightarrow{E} Q_{\pi_1} \xrightarrow{I} ... \xrightarrow{I} \pi_* \xrightarrow{E} Q_*$$
+    pi_0 --E--> Q_{pi_0} --I--> pi_1 --E--> Q_{pi_1} --I--> ... --I--> pi* --E--> Q*
 
 Where:
 - **E** = Policy Evaluation (estimate Q for current π)
@@ -147,7 +147,7 @@ Where:
 
 ### Policy Improvement
 
-$$\pi(s) \doteq \arg\max_a Q(s, a)$$
+    pi(s) = argmax_a Q(s, a)
 
 **Process:**
 1. Get Q(s, a) values

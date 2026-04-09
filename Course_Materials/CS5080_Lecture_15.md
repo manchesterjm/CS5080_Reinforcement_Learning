@@ -17,7 +17,7 @@
 
 From Sutton & Barto:
 
-$$Q(S,A) \leftarrow Q(S,A) + \alpha \left[ R + \gamma \max_a Q(S',a) - Q(S,A) \right]$$
+    Q(S,A) <-- Q(S,A) + alpha * [R + gamma * max_a Q(S',a) - Q(S,A)]
 
 - Q table used in **two places:**
   1. To **choose action** (epsilon-greedy)

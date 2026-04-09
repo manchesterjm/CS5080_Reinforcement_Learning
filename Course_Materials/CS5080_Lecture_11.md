@@ -12,20 +12,23 @@
 
 **V_pi estimation:**
 
-$$V(s) \leftarrow V(s) + \alpha \left[ \underbrace{r + \gamma V(s') - V(s)}_{\text{TD error}} \right]$$
+    V(s) <-- V(s) + alpha * [r + gamma * V(s') - V(s)]
+                                 ^--- TD error ---^
 
 - Action gives reward, look at next state
 - Equivalent form: V(s) = V(s) + δ[G_{t+1} - V(s)]
 
 **SARSA:**
 
-$$q(s,a) \leftarrow q(s,a) + \alpha \left[ \underbrace{r + \gamma q(s', a') - q(s,a)}_{\text{TD error}} \right]$$
+    q(s,a) <-- q(s,a) + alpha * [r + gamma * q(s', a') - q(s,a)]
+                                   ^--- TD error ---^
 
 - Equivalent form: q(s,a) = q(s,a) + δ[G_{t+1} - q(s,a)]
 
 **Q-learning:**
 
-$$q(s,a) \leftarrow q(s,a) + \alpha \left[ \underbrace{r + \gamma \max_{a'} q(s', a') - q(s,a)}_{\text{TD error}} \right]$$
+    q(s,a) <-- q(s,a) + alpha * [r + gamma * max_{a'} q(s', a') - q(s,a)]
+                                   ^--- TD error ---^
 
 - Why only look ahead more than one step?
 
@@ -35,11 +38,11 @@ Trajectory: S_t → (a_t, r_{t+1}) → S_{t+1} → (a_{t+1}, r_{t+2}) → S_{t+2
 
 **For state value (V):**
 
-$$G_{t:t+2}\bigg|_s = r_{t+1} + \gamma r_{t+2} + \gamma^2 V(S_{t+2})$$
+    G_{t:t+2}|_s = r_{t+1} + gamma * r_{t+2} + gamma^2 * V(S_{t+2})
 
 **For action value (q):**
 
-$$G_{t:t+2}\bigg|_{s,a} = r_{t+1} + \gamma r_{t+2} + \gamma^2 q(S_{t+2}, a_{t+2})$$
+    G_{t:t+2}|_{s,a} = r_{t+1} + gamma * r_{t+2} + gamma^2 * q(S_{t+2}, a_{t+2})
 
 - Looking at algorithm on **Figure 7.1** (Sutton & Barto)
 - Also: n-step TD for estimating V ≈ V_pi

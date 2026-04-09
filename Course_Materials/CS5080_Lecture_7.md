@@ -37,7 +37,7 @@ Two phases:
 - **Evaluation**
 - **Improvement**
 
-$$\pi_0 \xrightarrow{\text{eval}} Q(s,a) \xrightarrow{\text{improve}} \pi_1 \quad \text{repeat until} \rightarrow \pi_*$$
+    pi_0 --eval--> Q(s,a) --improve--> pi_1   repeat until --> pi*
 
 **Key property:** First state can be **any state in our state space** (exploring starts).
 
@@ -101,15 +101,15 @@ Let there be A(s) = actions possible in state s.
 **Given a small ε > 0:**
 - Every action is possible with **at least** probability:
 
-$$\frac{\varepsilon}{|A(s)|}$$
+    epsilon / |A(s)|
 
 **Example:** ε = 0.10, |A(s)| = 5
 
-$$\text{Every action is possible with prob at least } = \frac{0.10}{5} = 0.02$$
+    Every action is possible with prob at least = 0.10 / 5 = 0.02
 
 **Probability assigned to a\* (the best action):**
 
-$$\pi(a^*|s) = 1 - \varepsilon + \frac{\varepsilon}{|A(s)|}$$
+    pi(a*|s) = 1 - epsilon + epsilon / |A(s)|
 
 **Example:** With ε = 0.10, |A(s)| = 5:
 - Best action probability: 1 - 0.10 + 0.10/5 = 0.92

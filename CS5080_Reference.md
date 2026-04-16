@@ -202,7 +202,7 @@ From CS 2300 and general coursework:
 | Short Questions 8 | 3/17 | Ready     |           | `Homework/Submissions/ShortQuestions8_Answers.pdf`                       |
 | HW1 Monte Carlo   | 2/26 | Submitted |           | `Homework/HW1_MonteCarlo/` + `Homework/Source/HW1_MonteCarlo_Paper.pdf` |
 | HW1 Demo          | 3/5  | Pending   |           | Demo during office hours (Tu/Th 6:05pm or Wed 4pm)                      |
-| HW2 DQN           | 4/9  | Not Started |         | `Homework/Assignments/702-hw2.pdf`                                      |
+| HW2 DQN           | 4/9  | Not Started |         | `Homework/Assignments/702-hw2.pdf`; **code at `D:\CS5080_HW2_QLearning\`** (not OneDrive) |
 
 ### HW2: Parking Lot DQN Agent
 
@@ -236,6 +236,13 @@ From CS 2300 and general coursework:
 - **Lecture 10:** Double Q-Learning pseudocode (S&B Eq. 6.10) — two Q-tables, one selects action, other evaluates, reduces maximization bias
 - **Lecture 11:** Parking lot as example of traditional RL limitations (discrete states, limited view)
 - **Lecture 15:** DQN algorithm (Mnih et al.), replay memory, Q-table→Q-network mapping, HW2 clarifications
+
+**Code location (desktop, 2026-04-12):**
+- **Path:** `D:\CS5080_HW2_QLearning\` (moved off OneDrive because the venv is ~720 MB)
+- **Originally created on:** Surface Pro
+- **Transferred via:** external SSD E: (Windows Backup, 1 TB)
+- **Contents:** `demo.py`, `dqn.py`, `parking_lot.py`, `q_learning.py`, `models/` (trained checkpoints: Q, DQ, DQN at grid sizes 7x6, 10x12, 14x16, 18x20), `venv/` (Windows venv from Surface — may need regeneration on this machine)
+- **Total size:** 734 MB (719 MB venv, 16 MB models, ~50 KB source)
 
 **No code submission required** — written answers in the paper are sufficient. Demo required the week of April 9.
 

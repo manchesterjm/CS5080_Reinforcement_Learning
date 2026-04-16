@@ -1,6 +1,8 @@
 # Context Menu Setup for Surface Pro
 
 > **For Claude Code:** Run all registry commands below automatically. These must be run from an **elevated CMD** (admin Command Prompt), not PowerShell. Use `powershell -Command "Start-Process cmd -Verb RunAs"` to get an admin CMD if needed. The Ubuntu distro name may differ on this machine — run `wsl --list` first and substitute the correct name in the Ubuntu entry.
+>
+> **CRITICAL — `%V` escaping in batch files:** If you run these commands from a `.bat` file, every `%V` must be written as `%%V`, otherwise cmd.exe eats the `%` and the registry ends up with a broken `"V"` instead of `"%V"`. The commands below show the form for a **direct CMD paste**. If you're generating a .bat file, double every `%V` to `%%V`.
 
 ## Step 1: Restore Classic Right-Click Menu (Windows 11)
 
@@ -47,12 +49,12 @@ reg add "HKEY_CLASSES_ROOT\Directory\Background\shell\Ubuntu\command" /ve /d "wt
 ```
 
 ### Open WSL here
-Opens default WSL distribution.
+Opens default WSL distribution. Must be wrapped in `wt.exe` — calling `wsl.exe` directly from a registry shell command spawns a console that closes as soon as wsl exits (no persistent terminal host).
 
 ```cmd
 reg add "HKEY_CLASSES_ROOT\Directory\Background\shell\WSL_Here" /ve /d "Open WSL here" /f
 reg add "HKEY_CLASSES_ROOT\Directory\Background\shell\WSL_Here" /v Icon /d "C:\Windows\System32\wsl.exe" /f
-reg add "HKEY_CLASSES_ROOT\Directory\Background\shell\WSL_Here\command" /ve /d "wsl.exe --cd \"%V\"" /f
+reg add "HKEY_CLASSES_ROOT\Directory\Background\shell\WSL_Here\command" /ve /d "wt.exe -d \"%V\" wsl.exe" /f
 ```
 
 ## Result
